@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const server = createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 1024 * 1024 });
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 

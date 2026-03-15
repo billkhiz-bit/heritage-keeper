@@ -111,7 +111,7 @@ const ShareView: React.FC<Props> = ({ timeline, familyMembers }) => {
                 background: copied ? 'var(--success)' : undefined,
               }}
             >
-              {copied ? '&#x2714; Copied!' : '&#x1f4cb; Copy Summary'}
+              {copied ? '\u{2714} Copied!' : '\u{1F4CB} Copy Summary'}
             </button>
           </div>
         </div>
@@ -150,7 +150,7 @@ const ShareView: React.FC<Props> = ({ timeline, familyMembers }) => {
             { step: '3', title: 'Merge History', desc: 'Family members can record their own memories and combine timelines.' },
           ].map((item) => (
             <div key={item.step} style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{
+              <div aria-hidden="true" style={{
                 width: 36, height: 36, borderRadius: '50%', background: 'var(--primary)',
                 color: 'white', fontWeight: 800, fontSize: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',

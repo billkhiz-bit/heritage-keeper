@@ -60,7 +60,7 @@ export class LiveSession {
   async connect(): Promise<void> {
     try {
       this.session = await this.ai.live.connect({
-        model: 'gemini-live-2.5-flash-preview',
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: SYSTEM_INSTRUCTION,
@@ -80,24 +80,24 @@ export class LiveSession {
             await this.handleGeminiMessage(event);
           },
           onerror: (event: any) => {
-            console.error('[Live] Error:', event);
+            console.error('[Live] Error:', event?.message || event?.error || JSON.stringify(event));
             this.sendToClient({
               type: 'error',
-              message: 'Connection error with Heritage Keeper.',
+              message: 'Connection error with Heritage Keeper. Please try again.',
             });
           },
-          onclose: () => {
-            console.log('[Live] Disconnected from Gemini');
+          onclose: (event: any) => {
+            console.log('[Live] Disconnected from Gemini. Code:', event?.code, 'Reason:', event?.reason || 'none');
             this.isConnected = false;
             this.sendToClient({ type: 'status', status: 'disconnected' });
           },
         },
       });
     } catch (err: any) {
-      console.error('[Live] Failed to connect:', err.message);
+      console.error('[Live] Failed to connect:', err.message, err.stack);
       this.sendToClient({
         type: 'error',
-        message: `Failed to connect: ${err.message}`,
+        message: 'Failed to connect to Heritage Keeper. Check your API key and try again.',
       });
       throw err;
     }

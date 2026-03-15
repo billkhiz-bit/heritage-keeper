@@ -913,7 +913,7 @@ body {
   flex-wrap: wrap;
 }
 
-.tree-member-card {
+button.tree-member-card {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -923,6 +923,9 @@ body {
   position: relative;
   transition: all 0.2s;
   cursor: pointer;
+  font-family: var(--font);
+  font-size: inherit;
+  color: inherit;
 }
 
 .tree-member-card:hover {

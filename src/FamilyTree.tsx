@@ -11,6 +11,7 @@ export interface FamilyMember {
 interface Props {
   members: FamilyMember[];
   onMemberClick?: (name: string) => void;
+  onAddMember?: (member: FamilyMember) => void;
   onStoryStarter?: (prompt: string) => void;
 }
 
@@ -46,7 +47,7 @@ const STORY_STARTERS = [
   "What was school like for Mum/Dad?",
 ];
 
-const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onStoryStarter }) => {
+const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onStoryStarter }) => {
   const [name, setName] = useState('');
   const [generation, setGeneration] = useState('-1');
   const [relationship, setRelationship] = useState('');
@@ -76,6 +77,7 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onStoryStarter })
             placeholder="e.g. Martha Stewart"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            maxLength={100}
           />
         </div>
 
@@ -105,17 +107,21 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onStoryStarter })
             placeholder="Mother, Father, etc."
             value={relationship}
             onChange={(e) => setRelationship(e.target.value)}
+            maxLength={50}
           />
         </div>
 
         <button
           className="tree-save-btn"
-          disabled={!name.trim() || !relationship.trim()}
+          disabled={!name.trim() || !relationship.trim() || name.trim().length > 100 || relationship.trim().length > 50}
           onClick={() => {
-            if (onStoryStarter) {
-              onStoryStarter(
-                `Add ${name.trim()} to my family tree. They are my ${relationship.trim()}.`
-              );
+            if (onAddMember) {
+              onAddMember({
+                name: name.trim(),
+                relationship: relationship.trim(),
+                generation: parseInt(generation),
+                storyCount: 0,
+              });
             }
             setName('');
             setRelationship('');
@@ -162,10 +168,11 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onStoryStarter })
                   </p>
                   <div className="generation-members">
                     {genMembers.map((member, i) => (
-                      <div
+                      <button
                         key={i}
                         className="tree-member-card"
                         onClick={() => onMemberClick?.(member.name)}
+                        aria-label={`${member.name}, ${member.relationship}${member.storyCount > 0 ? `, ${member.storyCount} stories` : ''}`}
                       >
                         {member.storyCount > 0 && (
                           <span className="tree-member-stories">{member.storyCount}</span>
@@ -192,7 +199,7 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onStoryStarter })
                             {member.storyCount} {member.storyCount === 1 ? 'story' : 'stories'}
                           </p>
                         )}
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>

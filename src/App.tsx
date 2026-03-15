@@ -165,7 +165,7 @@ const App: React.FC = () => {
 
   const statusColour: Record<AgentStatus, string> = {
     disconnected: '#9ca3af',
-    connecting: '#eab308',
+    connecting: '#a16207',
     connected: '#16a34a',
     listening: '#dc2626',
     thinking: '#7c3aed',
@@ -278,10 +278,11 @@ const App: React.FC = () => {
       <div className="app-layout">
 
         {/* Status bar */}
-        <div className="status-bar">
+        <div className="status-bar" role="status" aria-live="polite" aria-label={`Connection status: ${statusLabel[status]}`}>
           <div
             className={`status-dot ${status}`}
             style={{ background: statusColour[status] }}
+            aria-hidden="true"
           />
           <span className="status-label" style={{ color: statusColour[status] }}>
             {statusLabel[status]}
@@ -317,7 +318,7 @@ const App: React.FC = () => {
                 aria-label={isRecording ? 'Stop recording' : 'Start recording'}
                 title={isRecording ? 'Tap to stop' : 'Speak a memory'}
               >
-                {isRecording ? '&#x23f9;' : '&#x1f399;'}
+                {isRecording ? '\u{23F9}' : '\u{1F399}'}
               </button>
               <button
                 className="btn-post"
@@ -337,8 +338,19 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Error */}
-        {error && <div className="error-banner">{error}</div>}
+        {/* Error — dismissible */}
+        {error && (
+          <div className="error-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{error}</span>
+            <button
+              onClick={() => setError(null)}
+              aria-label="Dismiss error"
+              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontWeight: 700, fontSize: 16, padding: '0 4px' }}
+            >
+              &times;
+            </button>
+          </div>
+        )}
 
         {/* View content */}
         {activeView === 'timeline' && (
@@ -354,6 +366,14 @@ const App: React.FC = () => {
           <FamilyTree
             members={familyMembers}
             onMemberClick={() => setActiveView('timeline')}
+            onAddMember={(member) => {
+              setFamilyMembers((prev) => {
+                const key = member.name.toLowerCase();
+                const exists = prev.some((m) => m.name.toLowerCase() === key);
+                if (exists) return prev;
+                return [...prev, member];
+              });
+            }}
             onStoryStarter={(prompt) => {
               setTextInput(prompt);
               setActiveView('timeline');
@@ -370,9 +390,9 @@ const App: React.FC = () => {
       <footer className="app-footer">
         Heritage Keeper &copy; {new Date().getFullYear()}
         <br />
-        <a href="#">Privacy Policy</a>
-        <a href="#">Family Settings</a>
-        <a href="#">Archive Export</a>
+        <span>Privacy Policy</span>
+        <span>Family Settings</span>
+        <span>Archive Export</span>
       </footer>
     </div>
   );
