@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.08"/>
+    </filter>
+    <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8f7ff"/>
+      <stop offset="100%" stop-color="#f0eef8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="620" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="36" text-anchor="middle" font-size="20" font-weight="800" fill="#7c3aed" letter-spacing="2">HERITAGE KEEPER — SYSTEM ARCHITECTURE</text>
+
+  <!-- ════ BROWSER ════ -->
+  <rect x="30" y="60" width="300" height="500" rx="14" fill="#fff" stroke="#e5e5ea" filter="url(#shadow)"/>
+  <rect x="30" y="60" width="300" height="40" rx="14" fill="url(#purpleGrad)"/>
+  <rect x="30" y="86" width="300" height="14" fill="url(#purpleGrad)"/>
+  <text x="180" y="86" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" letter-spacing="1.5">BROWSER — React 19 + TypeScript</text>
+
+  <!-- Browser items -->
+  <rect x="50" y="116" width="260" height="34" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="70" y="138" font-size="12" font-weight="600" fill="#5b21b6">🎙 Microphone Input (PCM 16kHz)</text>
+
+  <rect x="50" y="160" width="260" height="34" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="70" y="182" font-size="12" font-weight="600" fill="#5b21b6">⌨ Text Input</text>
+
+  <rect x="50" y="204" width="260" height="34" rx="8" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="70" y="226" font-size="12" font-weight="600" fill="#5b21b6">📷 Photo Upload</text>
+
+  <rect x="50" y="260" width="260" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="70" y="282" font-size="12" font-weight="600" fill="#059669">📜 Timeline View</text>
+
+  <rect x="50" y="304" width="260" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="70" y="326" font-size="12" font-weight="600" fill="#059669">🌳 Family Tree View</text>
+
+  <rect x="50" y="348" width="260" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="70" y="370" font-size="12" font-weight="600" fill="#059669">📤 Share / Export / PDF</text>
+
+  <rect x="50" y="404" width="260" height="34" rx="8" fill="#fffbeb" stroke="#fcd34d"/>
+  <text x="70" y="426" font-size="12" font-weight="600" fill="#b45309">💾 localStorage Persistence</text>
+
+  <rect x="50" y="448" width="260" height="34" rx="8" fill="#fffbeb" stroke="#fcd34d"/>
+  <text x="70" y="470" font-size="12" font-weight="600" fill="#b45309">🔄 Auto-Reconnect (3 attempts)</text>
+
+  <rect x="50" y="492" width="260" height="34" rx="8" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="70" y="514" font-size="12" font-weight="600" fill="#dc2626">💬 Conversation Thread</text>
+
+  <!-- ════ WEBSOCKET ════ -->
+  <rect x="370" y="140" width="120" height="180" rx="10" fill="#fff" stroke="#c4b5fd" stroke-dasharray="6,3" filter="url(#shadow)"/>
+  <text x="430" y="165" text-anchor="middle" font-size="11" font-weight="800" fill="#7c3aed" letter-spacing="1">WEBSOCKET</text>
+
+  <text x="430" y="192" text-anchor="middle" font-size="10" fill="#666">Audio (PCM)</text>
+  <line x1="385" y1="200" x2="475" y2="200" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="475" y1="208" x2="385" y2="208" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,2"/>
+
+  <text x="430" y="235" text-anchor="middle" font-size="10" fill="#666">JSON Messages</text>
+  <line x1="385" y1="243" x2="475" y2="243" stroke="#2563eb" stroke-width="1.5"/>
+  <line x1="475" y1="251" x2="385" y2="251" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,2"/>
+
+  <text x="430" y="278" text-anchor="middle" font-size="10" fill="#666">UI Events</text>
+  <line x1="475" y1="286" x2="385" y2="286" stroke="#059669" stroke-width="1.5"/>
+  <line x1="475" y1="294" x2="385" y2="294" stroke="#059669" stroke-width="1.5" stroke-dasharray="4,2"/>
+
+  <!-- Connection lines Browser→WS -->
+  <line x1="330" y1="230" x2="370" y2="230" stroke="#7c3aed" stroke-width="2"/>
+  <!-- Connection lines WS→Server -->
+  <line x1="490" y1="230" x2="530" y2="230" stroke="#7c3aed" stroke-width="2"/>
+
+  <!-- ════ SERVER ════ -->
+  <rect x="530" y="60" width="370" height="500" rx="14" fill="#fff" stroke="#e5e5ea" filter="url(#shadow)"/>
+  <rect x="530" y="60" width="370" height="40" rx="14" fill="url(#purpleGrad)"/>
+  <rect x="530" y="86" width="370" height="14" fill="url(#purpleGrad)"/>
+  <text x="715" y="86" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" letter-spacing="1.5">SERVER — Express + Node.js</text>
+
+  <!-- Cloud Run badge -->
+  <rect x="780" y="65" width="110" height="22" rx="11" fill="#fff" fill-opacity="0.2"/>
+  <text x="835" y="80" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">☁ Cloud Run</text>
+
+  <!-- WebSocket Handler -->
+  <rect x="550" y="116" width="330" height="30" rx="8" fill="#f7f7f8" stroke="#e5e5ea"/>
+  <text x="715" y="136" text-anchor="middle" font-size="12" font-weight="600" fill="#444">WebSocket Handler + Photo Upload API</text>
+
+  <!-- Gemini Live API box -->
+  <rect x="550" y="160" width="330" height="220" rx="10" fill="#faf8ff" stroke="#c4b5fd"/>
+  <text x="715" y="182" text-anchor="middle" font-size="12" font-weight="800" fill="#7c3aed">GEMINI LIVE API SESSION</text>
+
+  <!-- Model badge -->
+  <rect x="580" y="192" width="270" height="22" rx="6" fill="#ede9fe"/>
+  <text x="715" y="207" text-anchor="middle" font-size="10" font-weight="600" fill="#5b21b6">gemini-2.5-flash-native-audio-preview-12-2025</text>
+
+  <!-- System Instruction -->
+  <rect x="580" y="222" width="130" height="26" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="645" y="240" text-anchor="middle" font-size="10" font-weight="600" fill="#059669">System Instruction</text>
+
+  <!-- Google Search -->
+  <rect x="720" y="222" width="130" height="26" rx="6" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="785" y="240" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">Google Search</text>
+
+  <!-- Tools -->
+  <text x="715" y="270" text-anchor="middle" font-size="10" font-weight="800" fill="#666" letter-spacing="1">FUNCTION-CALLING TOOLS</text>
+
+  <rect x="565" y="280" width="100" height="24" rx="12" fill="#7c3aed"/>
+  <text x="615" y="296" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">save_story</text>
+
+  <rect x="672" y="280" width="100" height="24" rx="12" fill="#7c3aed"/>
+  <text x="722" y="296" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">search_photos</text>
+
+  <rect x="779" y="280" width="90" height="24" rx="12" fill="#7c3aed"/>
+  <text x="824" y="296" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">get_timeline</text>
+
+  <rect x="595" y="312" width="120" height="24" rx="12" fill="#7c3aed"/>
+  <text x="655" y="328" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">add_family_member</text>
+
+  <rect x="722" y="312" width="110" height="24" rx="12" fill="#7c3aed"/>
+  <text x="777" y="328" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">get_family_tree</text>
+
+  <!-- Thought filter -->
+  <rect x="580" y="348" width="270" height="22" rx="6" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="715" y="363" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Thought Part Filter (no internal reasoning leaked)</text>
+
+  <!-- State box -->
+  <rect x="550" y="392" width="330" height="50" rx="8" fill="#fffbeb" stroke="#fcd34d"/>
+  <text x="715" y="412" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309">In-Memory State</text>
+  <text x="715" y="430" text-anchor="middle" font-size="10" fill="#92400e">Timeline Entries + Family Tree + Uploaded Photos</text>
+
+  <!-- Name matching -->
+  <rect x="550" y="454" width="330" height="34" rx="8" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="715" y="476" text-anchor="middle" font-size="11" font-weight="600" fill="#059669">Family Member Name Matching (fuzzy link)</text>
+
+  <!-- Error handling -->
+  <rect x="550" y="500" width="330" height="34" rx="8" fill="#f7f7f8" stroke="#e5e5ea"/>
+  <text x="715" y="522" text-anchor="middle" font-size="11" font-weight="600" fill="#666">Sanitised Error Messages + maxPayload 1MB</text>
+
+  <!-- ════ EXTERNAL SERVICES ════ -->
+  <rect x="940" y="160" width="230" height="70" rx="10" fill="#fff" stroke="#e5e5ea" filter="url(#shadow)"/>
+  <text x="1055" y="185" text-anchor="middle" font-size="11" font-weight="700" fill="#444">Wikimedia Commons</text>
+  <text x="1055" y="200" text-anchor="middle" font-size="10" fill="#666">Historical Photo Search</text>
+  <text x="1055" y="215" text-anchor="middle" font-size="9" fill="#999">Bitmap filter + MIME check + size check</text>
+
+  <rect x="940" y="250" width="230" height="55" rx="10" fill="#fff" stroke="#e5e5ea" filter="url(#shadow)"/>
+  <text x="1055" y="275" text-anchor="middle" font-size="11" font-weight="700" fill="#444">Google Search API</text>
+  <text x="1055" y="292" text-anchor="middle" font-size="10" fill="#666">Grounding for Historical Facts</text>
+
+  <!-- Connection arrows to external -->
+  <line x1="880" y1="195" x2="940" y2="195" stroke="#d97706" stroke-width="1.5"/>
+  <text x="910" y="190" text-anchor="middle" font-size="8" fill="#d97706">REST</text>
+
+  <line x1="880" y1="275" x2="940" y2="275" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="910" y="270" text-anchor="middle" font-size="8" fill="#2563eb">SDK</text>
+
+  <!-- Legend -->
+  <rect x="940" y="400" width="230" height="140" rx="10" fill="#fff" stroke="#e5e5ea" filter="url(#shadow)"/>
+  <text x="1055" y="425" text-anchor="middle" font-size="11" font-weight="800" fill="#444" letter-spacing="1">TECH STACK</text>
+
+  <text x="960" y="448" font-size="10" fill="#666">Frontend: React 19 + TypeScript</text>
+  <text x="960" y="465" font-size="10" fill="#666">Backend: Express 5 + Node 20</text>
+  <text x="960" y="482" font-size="10" fill="#666">AI: Gemini 2.5 Flash (Live API)</text>
+  <text x="960" y="499" font-size="10" fill="#666">Deploy: Google Cloud Run</text>
+  <text x="960" y="516" font-size="10" fill="#666">Audio: PCM 16kHz in / 24kHz out</text>
+  <text x="960" y="533" font-size="10" fill="#666">Photos: Wikimedia Commons API</text>
+
+  <!-- Footer -->
+  <text x="600" y="605" text-anchor="middle" font-size="10" fill="#999">Heritage Keeper — Gemini Live Agent Challenge 2026</text>
+</svg>
