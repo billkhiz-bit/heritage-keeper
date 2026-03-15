@@ -49,8 +49,9 @@ export class AudioManager {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      // Send init with API key
-      this.send({ type: 'init', apiKey });
+      // Send init with API key and optional session ID for persistence
+      const sessionId = localStorage.getItem('hk_sessionId') || undefined;
+      this.send({ type: 'init', apiKey, sessionId });
       this.reconnectAttempts = 0;
     };
 

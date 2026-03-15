@@ -55,6 +55,7 @@ const App: React.FC = () => {
   const [loosePhotos, setLoosePhotos] = useState<HistoricalPhoto[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [conversation, setConversation] = useState<{role: 'user' | 'agent', text: string, timestamp: number}[]>([]);
+  const [photoAnalysis, setPhotoAnalysis] = useState<string | null>(null);
   const audioRef = useRef<AudioManager | null>(null);
 
   const handleUIEvent = useCallback((event: string, data: any) => {
@@ -158,6 +159,11 @@ const App: React.FC = () => {
       case 'error':
         setError(message.message);
         setStatus('disconnected');
+        break;
+      case 'session':
+        if (message.sessionId) {
+          localStorage.setItem('hk_sessionId', message.sessionId);
+        }
         break;
       case 'full_state':
         if (message.timeline) setTimeline(message.timeline);
@@ -413,6 +419,15 @@ const App: React.FC = () => {
                         });
                         const { url } = await resp.json();
                         setLoosePhotos(prev => [...prev, { url, title: file.name.replace(/\.[^.]+$/, ''), description: 'Family photo' }]);
+
+                        // Analyse the photo with Gemini Vision
+                        fetch('/api/analyse-photo', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ image: dataUrl, apiKey }),
+                        }).then(r => r.json()).then(data => {
+                          if (data.analysis) setPhotoAnalysis(data.analysis);
+                        }).catch(() => {}); // Silent fail — analysis is optional
                       } catch {
                         setError('Failed to upload photo');
                       }
@@ -456,6 +471,17 @@ const App: React.FC = () => {
         {agentText && (
           <div className="agent-response fade-in">
             <p>{agentText}</p>
+          </div>
+        )}
+
+        {/* Photo analysis */}
+        {photoAnalysis && (
+          <div className="photo-analysis fade-in">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <p style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--primary)' }}>&#x1f4f7; Photo Analysis</p>
+              <button onClick={() => setPhotoAnalysis(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }} aria-label="Dismiss photo analysis">&times;</button>
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{photoAnalysis}</p>
           </div>
         )}
 

@@ -353,6 +353,15 @@ body {
   font-size: 14px;
 }
 
+/* ─── Photo Analysis ─── */
+.photo-analysis {
+  background: var(--bg-card);
+  border: 1px solid var(--primary-mid);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
 /* ─── Error Banner ─── */
 .error-banner {
   padding: 12px 16px;

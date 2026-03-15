@@ -48,6 +48,57 @@ app.post('/api/upload-photo', (req, res) => {
   }
 });
 
+// Photo analysis endpoint — Gemini Vision
+app.post('/api/analyse-photo', async (req, res) => {
+  try {
+    const { image, apiKey } = req.body;
+    if (!image || !apiKey) {
+      return res.status(400).json({ error: 'Image and API key required' });
+    }
+
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    // Extract base64 data from data URL
+    const base64Match = image.match(/^data:(.+);base64,(.+)$/);
+    if (!base64Match) {
+      return res.status(400).json({ error: 'Invalid image format' });
+    }
+
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-preview-05-20',
+      contents: [{
+        role: 'user',
+        parts: [
+          {
+            inlineData: {
+              mimeType: base64Match[1],
+              data: base64Match[2],
+            },
+          },
+          {
+            text: `You are Heritage Keeper, a family history preservation AI. Analyse this family photograph and provide:
+
+1. **Description**: What you see — people, their approximate ages, clothing, setting, activities
+2. **Estimated Era**: Based on clothing, photo quality, surroundings — estimate the decade
+3. **Details to Ask About**: 2-3 questions the family could answer about this photo (e.g., "Who is the person on the left?", "Where was this taken?")
+4. **Historical Context**: If you can identify the era, mention what life was like then
+
+Be warm and curious. This is someone's family — treat the photo with respect.
+Keep it concise — 4-5 sentences for the description, 1 sentence for era, 2-3 bullet questions.`,
+          },
+        ],
+      }],
+    });
+
+    const text = result.text || '';
+    res.json({ analysis: text });
+  } catch (err: any) {
+    console.error('[Vision] Analysis failed:', err.message);
+    res.status(500).json({ error: 'Photo analysis failed' });
+  }
+});
+
 // Serve uploaded photos
 app.get('/api/photos/:id', (req, res) => {
   const image = uploadedImages.get(req.params.id);
@@ -64,7 +115,7 @@ app.get('/api/photos/:id', (req, res) => {
 wss.on('connection', (ws: WebSocket) => {
   console.log('[WS] Client connected');
   let liveSession: LiveSession | null = null;
-  const state = new HeritageState();
+  let state = new HeritageState();
 
   ws.on('message', async (raw: Buffer) => {
     try {
@@ -87,9 +138,31 @@ wss.on('connection', (ws: WebSocket) => {
             if (liveSession) {
               liveSession.disconnect();
             }
+
+            // Create state with optional session ID for persistence
+            state = new HeritageState(message.sessionId || undefined);
+            await state.load();
+
+            // Send session ID back so client can reconnect to same session
+            ws.send(
+              JSON.stringify({
+                type: 'session',
+                sessionId: state.getSessionId(),
+              })
+            );
+
             liveSession = new LiveSession(message.apiKey, ws, state);
             try {
               await liveSession.connect();
+
+              // Send loaded state to client after connecting
+              ws.send(
+                JSON.stringify({
+                  type: 'full_state',
+                  timeline: state.getTimeline(),
+                  familyTree: state.getFamilyTree(),
+                })
+              );
             } catch (err: any) {
               ws.send(
                 JSON.stringify({

@@ -68,6 +68,13 @@ export class LiveSession {
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         config: {
           responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: {
+                voiceName: 'Kore',
+              },
+            },
+          },
           systemInstruction: SYSTEM_INSTRUCTION,
           tools: [
             { functionDeclarations: toolDeclarations as any },
