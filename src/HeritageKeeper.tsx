@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FamilyMember } from './FamilyTree';
 
 interface HistoricalPhoto {
@@ -17,9 +17,12 @@ interface TimelineEntry {
   nowDescription: string;
   people: string[];
   historicalFacts: string[];
-  culturalContext: { music: string; film: string; event: string };
+  culturalContext: { costOfLiving: string; dailyLife: string; event: string };
   photos: HistoricalPhoto[];
   storyText: string;
+  groundingSources?: string[];
+  linkedMembers?: string[];
+  newPeople?: string[];
 }
 
 interface Props {
@@ -27,6 +30,7 @@ interface Props {
   familyMembers: FamilyMember[];
   loosePhotos: HistoricalPhoto[];
   onViewTree: () => void;
+  onPromptClick?: (prompt: string) => void;
 }
 
 const AVATAR_COLOURS = [
@@ -44,46 +48,111 @@ function getInitials(name: string): string {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree }) => {
-  const sortedEntries = [...timeline].sort(
-    (a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0)
+const ONBOARDING_PROMPTS = [
+  "Tell me about your grandparents — where they came from, what they did...",
+  "What was your childhood home like? Describe the neighbourhood...",
+  "What's a family recipe or tradition that's been passed down?",
+];
+
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onPromptClick }) => {
+  const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
+  const [locationFilter, setLocationFilter] = useState<string | null>(null);
+
+  // Show newest entries first (by creation time — id is Date.now())
+  const allEntries = [...timeline].sort(
+    (a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0)
   );
+
+  // Filter by location if active
+  const sortedEntries = locationFilter
+    ? allEntries.filter((e) => e.location === locationFilter)
+    : allEntries;
 
   const allLocations = [...new Set(timeline.map((e) => e.location).filter(Boolean))];
 
-  // Build a context summary from the most recent entry (for the sidebar)
-  const latestEntry = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1] : null;
+  // Count entries per location
+  const locationCounts = new Map<string, number>();
+  timeline.forEach((e) => { if (e.location) locationCounts.set(e.location, (locationCounts.get(e.location) || 0) + 1); });
+
+  const latestEntry = allEntries.length > 0 ? allEntries[0] : null;
+
+  // Render a photo grid (clickable → lightbox)
+  const renderPhotoGrid = (photos: HistoricalPhoto[]) => (
+    <div>
+      <div className="photo-grid">
+        {photos.map((photo, i) => (
+          <button
+            key={i}
+            className="photo-grid-item"
+            onClick={() => setLightboxPhoto(photo)}
+            aria-label={`View photo: ${photo.title}`}
+          >
+            <img
+              src={photo.url}
+              alt={photo.title}
+              className="photo-grid-img"
+              onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+            />
+            {photo.title && <span className="entry-photo-caption">{photo.title}</span>}
+          </button>
+        ))}
+      </div>
+      <p className="photo-credit">Historical photos — Wikimedia Commons. Click to enlarge.</p>
+    </div>
+  );
 
   return (
     <div className="two-col">
+      {/* ─── Lightbox Modal ─── */}
+      {lightboxPhoto && (
+        <div className="lightbox-overlay" onClick={() => setLightboxPhoto(null)}>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="lightbox-close"
+              onClick={() => setLightboxPhoto(null)}
+              aria-label="Close photo"
+            >
+              &times;
+            </button>
+            <img src={lightboxPhoto.url} alt={lightboxPhoto.title} className="lightbox-img" />
+            <div className="lightbox-info">
+              <h4>{lightboxPhoto.title}</h4>
+              {lightboxPhoto.description && <p>{lightboxPhoto.description}</p>}
+              <p className="lightbox-source">Source: Wikimedia Commons</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── Main Column: Timeline ─── */}
       <div>
         {/* Loose photos from search_photos tool */}
         {loosePhotos.length > 0 && (
           <div className="photos-strip fade-in">
-            <div className="photos-strip-row">
-              {loosePhotos.map((photo, i) => (
-                <div key={i} className="entry-photo-wrap" style={{ minWidth: '33%', flexShrink: 0 }}>
-                  <img
-                    src={photo.url}
-                    alt={photo.title}
-                    className="entry-photo"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  {photo.title && <span className="entry-photo-caption">{photo.title}</span>}
-                </div>
-              ))}
-            </div>
-            <p className="photo-credit">Historical photos — Wikimedia Commons</p>
+            {renderPhotoGrid(loosePhotos)}
           </div>
         )}
 
-        {/* Places bar */}
+        {/* Places bar — clickable filters */}
         {allLocations.length > 0 && (
           <div className="places-bar">
             <span className="places-label">Places:</span>
+            {locationFilter && (
+              <button
+                className="place-tag place-tag-clear"
+                onClick={() => setLocationFilter(null)}
+              >
+                All &times;
+              </button>
+            )}
             {allLocations.map((l, i) => (
-              <span key={i} className="place-tag">{l}</span>
+              <button
+                key={i}
+                className={`place-tag ${locationFilter === l ? 'place-tag-active' : ''}`}
+                onClick={() => setLocationFilter(locationFilter === l ? null : l)}
+              >
+                {l} ({locationCounts.get(l) || 0})
+              </button>
             ))}
           </div>
         )}
@@ -105,32 +174,14 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                   <div className="entry-dot" />
 
                   <div className="entry-inner">
-                    {/* Photos */}
-                    {entry.photos && entry.photos.length > 0 && (
-                      <div>
-                        <div className="entry-photos">
-                          {entry.photos.map((photo, i) => (
-                            <div
-                              key={i}
-                              className="entry-photo-wrap"
-                              style={{
-                                minWidth: entry.photos.length <= 2 ? '50%' : '33%',
-                                flexShrink: 0,
-                              }}
-                            >
-                              <img
-                                src={photo.url}
-                                alt={photo.title}
-                                className="entry-photo"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                              />
-                              {photo.title && (
-                                <span className="entry-photo-caption">{photo.title}</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <p className="photo-credit">Historical photos — Wikimedia Commons</p>
+                    {/* Photos — grid layout */}
+                    {entry.photos && entry.photos.length > 0 && renderPhotoGrid(entry.photos)}
+
+                    {/* Linked members notification */}
+                    {entry.linkedMembers && entry.linkedMembers.length > 0 && (
+                      <div className="linked-members-bar">
+                        <span className="linked-icon">&#x1f517;</span>
+                        Linked to: {entry.linkedMembers.join(', ')}
                       </div>
                     )}
 
@@ -155,9 +206,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                     {/* Location */}
                     {entry.location && (
                       <div className="entry-location">
-                        <span className="entry-location-name">
-                          &#x1f4cd; {entry.location}
-                        </span>
+                        <span className="entry-location-name">&#x1f4cd; {entry.location}</span>
                         <a
                           href={`https://www.google.com/maps/search/${encodeURIComponent(entry.location)}`}
                           target="_blank"
@@ -188,19 +237,19 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                       <h3 className="entry-title">{entry.title}</h3>
                       <p className="entry-summary">{entry.summary}</p>
 
-                      {/* Cultural context */}
-                      {(entry.culturalContext?.music || entry.culturalContext?.film || entry.culturalContext?.event) && (
+                      {/* Cultural context — Cost of Living, Daily Life, Events */}
+                      {(entry.culturalContext?.costOfLiving || entry.culturalContext?.dailyLife || entry.culturalContext?.event) && (
                         <div className="cultural-row">
-                          {entry.culturalContext.music && (
-                            <div className="cultural-pill music">
-                              <p className="cultural-pill-label">&#x1f3b5; Music</p>
-                              <p className="cultural-pill-text">{entry.culturalContext.music}</p>
+                          {entry.culturalContext.costOfLiving && (
+                            <div className="cultural-pill cost">
+                              <p className="cultural-pill-label">&#x1f4b7; Cost of Living</p>
+                              <p className="cultural-pill-text">{entry.culturalContext.costOfLiving}</p>
                             </div>
                           )}
-                          {entry.culturalContext.film && (
-                            <div className="cultural-pill film">
-                              <p className="cultural-pill-label">&#x1f3ac; Film</p>
-                              <p className="cultural-pill-text">{entry.culturalContext.film}</p>
+                          {entry.culturalContext.dailyLife && (
+                            <div className="cultural-pill daily">
+                              <p className="cultural-pill-label">&#x1f3e0; Daily Life</p>
+                              <p className="cultural-pill-text">{entry.culturalContext.dailyLife}</p>
                             </div>
                           )}
                           {entry.culturalContext.event && (
@@ -222,6 +271,31 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                         </div>
                       )}
 
+                      {entry.groundingSources && entry.groundingSources.length > 0 && (
+                        <div className="sources-section">
+                          <p className="facts-label">Sources</p>
+                          {entry.groundingSources.map((source, i) => {
+                            let label = source;
+                            try {
+                              label = new URL(source).hostname.replace('www.', '');
+                            } catch {
+                              // Not a valid URL — display the raw string
+                            }
+                            return (
+                              <a
+                                key={i}
+                                href={source}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="source-link"
+                              >
+                                {label}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <details className="story-details">
                         <summary>What you told me</summary>
                         <p>"{entry.storyText}"</p>
@@ -232,6 +306,14 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
               ))}
             </div>
           </div>
+        ) : timeline.length > 0 && sortedEntries.length === 0 ? (
+          <div className="empty-state">
+            <h3>No matching memories</h3>
+            <p>
+              No memories match your current search or filter.
+              Try a different search term or clear the location filter.
+            </p>
+          </div>
         ) : (
           <div className="empty-state">
             <h3>No memories yet</h3>
@@ -240,41 +322,81 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
               The Heritage Keeper will find period photographs, build your family tree,
               and create an illustrated timeline.
             </p>
+            {onPromptClick && (
+              <div className="onboarding-prompts fade-in">
+                {ONBOARDING_PROMPTS.map((prompt, i) => (
+                  <button
+                    key={i}
+                    className="onboarding-card"
+                    onClick={() => onPromptClick(prompt)}
+                    aria-label={`Try prompt: ${prompt}`}
+                  >
+                    <span className="onboarding-label">Try this</span>
+                    <p className="onboarding-text">{prompt}</p>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* ─── Sidebar ─── */}
       <aside className="sidebar">
+        {/* Heritage Span card */}
+        {allEntries.length >= 2 && (() => {
+          const byYear = [...allEntries].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0));
+          const earliest = byYear[0];
+          const latest = byYear[byYear.length - 1];
+          const span = (parseInt(latest.year) || 0) - (parseInt(earliest.year) || 0);
+          return (
+            <div className="sidebar-card fade-in">
+              <h4 className="sidebar-card-title purple">&#x23f3; Heritage Span</h4>
+              <div style={{ textAlign: 'center', padding: '8px 0' }}>
+                <p style={{ fontSize: 32, fontWeight: 800, color: 'var(--primary)' }}>{span > 0 ? `${span} years` : '\u2014'}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>of family history preserved</p>
+              </div>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1, padding: 12, background: '#fffbeb', borderRadius: 'var(--radius-sm)', border: '1px solid #fcd34d' }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#b45309', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 4 }}>Earliest</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{earliest.year}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{earliest.title}</p>
+                </div>
+                <div style={{ flex: 1, padding: 12, background: '#eff6ff', borderRadius: 'var(--radius-sm)', border: '1px solid #93c5fd' }}>
+                  <p style={{ fontSize: 10, fontWeight: 800, color: '#2563eb', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 4 }}>Latest</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{latest.year}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{latest.title}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Historical Context card */}
         {latestEntry && (
           <div className="sidebar-card fade-in">
-            <h4 className="sidebar-card-title purple">
-              &#x1f4dc; Historical Context
-            </h4>
+            <h4 className="sidebar-card-title purple">&#x1f4dc; Historical Context</h4>
 
             {latestEntry.historicalFacts && latestEntry.historicalFacts.length > 0 && (
               <div className="context-section">
                 <p className="context-section-title">Key Facts — {latestEntry.year}</p>
                 {latestEntry.historicalFacts.map((fact, i) => (
-                  <p key={i} className="context-section-text" style={{ marginBottom: 6 }}>
-                    {fact}
-                  </p>
+                  <p key={i} className="context-section-text" style={{ marginBottom: 6 }}>{fact}</p>
                 ))}
               </div>
             )}
 
-            {latestEntry.culturalContext?.music && (
+            {latestEntry.culturalContext?.costOfLiving && (
               <div className="context-section">
-                <p className="context-section-title">&#x1f3b5; Music</p>
-                <p className="context-section-text">{latestEntry.culturalContext.music}</p>
+                <p className="context-section-title">&#x1f4b7; Cost of Living</p>
+                <p className="context-section-text">{latestEntry.culturalContext.costOfLiving}</p>
               </div>
             )}
 
-            {latestEntry.culturalContext?.film && (
+            {latestEntry.culturalContext?.dailyLife && (
               <div className="context-section">
-                <p className="context-section-title">&#x1f3ac; Film &amp; TV</p>
-                <p className="context-section-text">{latestEntry.culturalContext.film}</p>
+                <p className="context-section-title">&#x1f3e0; Daily Life</p>
+                <p className="context-section-text">{latestEntry.culturalContext.dailyLife}</p>
               </div>
             )}
 
@@ -285,7 +407,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
               </div>
             )}
 
-            {!latestEntry.historicalFacts?.length && !latestEntry.culturalContext?.music && (
+            {!latestEntry.historicalFacts?.length && !latestEntry.culturalContext?.costOfLiving && (
               <p className="context-section-text">
                 Historical context will appear here as you share memories from different time periods.
               </p>
@@ -304,10 +426,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
               {familyMembers.slice(0, 8).map((member, i) => (
                 <div key={i} className="member-list-item">
                   <div className="member-list-left">
-                    <div
-                      className="member-avatar"
-                      style={{ background: getAvatarColour(member.name) }}
-                    >
+                    <div className="member-avatar" style={{ background: getAvatarColour(member.name) }}>
                       {getInitials(member.name)}
                     </div>
                     <div>
@@ -315,12 +434,9 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                       <p className="member-list-rel">{member.relationship}</p>
                     </div>
                   </div>
-                  <button className="member-view-link" onClick={onViewTree}>
-                    View Tree
-                  </button>
+                  <button className="member-view-link" onClick={onViewTree}>View Tree</button>
                 </div>
               ))}
-
               {familyMembers.length > 8 && (
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
                   + {familyMembers.length - 8} more members
@@ -333,10 +449,34 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
             </p>
           )}
 
-          <button className="invite-btn" onClick={onViewTree}>
-            View Full Family Tree
-          </button>
+          <button className="invite-btn" onClick={onViewTree}>View Full Family Tree</button>
         </div>
+
+        {/* Locations card */}
+        {allLocations.length > 0 && (
+          <div className="sidebar-card">
+            <h4 className="sidebar-card-title purple">&#x1f4cd; Locations</h4>
+            {allLocations.map((loc, i) => (
+              <button
+                key={i}
+                className={`location-list-item ${locationFilter === loc ? 'active' : ''}`}
+                onClick={() => setLocationFilter(locationFilter === loc ? null : loc)}
+              >
+                <span className="location-list-name">{loc}</span>
+                <span className="location-list-count">{locationCounts.get(loc) || 0} {(locationCounts.get(loc) || 0) === 1 ? 'memory' : 'memories'}</span>
+              </button>
+            ))}
+            {locationFilter && (
+              <button
+                className="invite-btn"
+                onClick={() => setLocationFilter(null)}
+                style={{ marginTop: 8 }}
+              >
+                Show All Locations
+              </button>
+            )}
+          </div>
+        )}
       </aside>
     </div>
   );

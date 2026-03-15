@@ -1,6 +1,7 @@
 // Heritage Keeper — Express server with WebSocket for Gemini Live API
 import express from 'express';
 import { createServer } from 'http';
+import { randomUUID } from 'crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -16,12 +17,47 @@ const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 1024 * 1024 }
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
+// Store uploaded images in memory (base64)
+const uploadedImages = new Map<string, string>();
+
+// Parse JSON bodies (must come before static middleware)
+app.use(express.json({ limit: '5mb' }));
+
 // Serve static frontend in production
 app.use(express.static(join(__dirname, '..', 'dist')));
 
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'heritage-keeper' });
+});
+
+// Photo upload endpoint
+app.post('/api/upload-photo', (req, res) => {
+  try {
+    const { image, title } = req.body;
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Image data required' });
+    }
+    const id = randomUUID();
+    uploadedImages.set(id, image);
+    // Clean up after 1 hour
+    setTimeout(() => uploadedImages.delete(id), 3600000);
+    res.json({ id, url: `/api/photos/${id}` });
+  } catch {
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+// Serve uploaded photos
+app.get('/api/photos/:id', (req, res) => {
+  const image = uploadedImages.get(req.params.id);
+  if (!image) return res.status(404).json({ error: 'Not found' });
+  // image is a data URL like "data:image/jpeg;base64,..."
+  const matches = image.match(/^data:(.+);base64,(.+)$/);
+  if (!matches) return res.status(400).json({ error: 'Invalid format' });
+  const buffer = Buffer.from(matches[2], 'base64');
+  res.setHeader('Content-Type', matches[1]);
+  res.send(buffer);
 });
 
 // WebSocket connection handler

@@ -24,9 +24,10 @@ export interface TimelineEntry {
   nowDescription: string;
   people: string[];
   historicalFacts: string[];
-  culturalContext: { music: string; film: string; event: string };
+  culturalContext: { costOfLiving: string; dailyLife: string; event: string };
   photos: HistoricalPhoto[];
   storyText: string;
+  groundingSources: string[];
 }
 
 export class HeritageState {

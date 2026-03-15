@@ -47,13 +47,13 @@ export const toolDeclarations = [
           items: { type: Type.STRING },
           description: '3 fascinating facts about the place or era giving context',
         },
-        music: {
+        cost_of_living: {
           type: Type.STRING,
-          description: 'A popular song or musician from that era and place',
+          description: 'Specific prices from that era and place — e.g. "Average house: £2,500. Weekly wage: £15. Pint of milk: 4d". Use the local currency.',
         },
-        film: {
+        daily_life: {
           type: Type.STRING,
-          description: 'A popular film or TV show from that era and place',
+          description: 'What everyday life looked like — e.g. "No central heating, coal fires, outside toilets, families shared one telephone". Be vivid and specific.',
         },
         event: {
           type: Type.STRING,
@@ -64,6 +64,12 @@ export const toolDeclarations = [
           items: { type: Type.STRING },
           description:
             'Five Wikimedia Commons search queries for historical photographs: 1) city + decade street view, 2) nearby landmark, 3) daily life scene, 4) neighbourhood/district, 5) broader regional scene',
+        },
+        grounding_sources: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description:
+            'URLs or source references that ground the historical facts (from Google Search results if available)',
         },
         story_text: {
           type: Type.STRING,
@@ -166,12 +172,13 @@ export async function executeTool(
         people: args.people || [],
         historicalFacts: args.historical_facts || [],
         culturalContext: {
-          music: args.music || '',
-          film: args.film || '',
+          costOfLiving: args.cost_of_living || '',
+          dailyLife: args.daily_life || '',
           event: args.event || '',
         },
         photos: [],
         storyText: args.story_text || '',
+        groundingSources: args.grounding_sources || [],
       };
 
       state.addStory(entry);
@@ -185,16 +192,33 @@ export async function executeTool(
         entry.photos = photos.slice(0, 8);
       }
 
+      // Check which people match existing family members
+      const linkedMembers: string[] = [];
+      const newPeople: string[] = [];
+      for (const person of entry.people) {
+        const key = person.toLowerCase();
+        const match = [...state.familyMembers.values()].find(
+          (m) => m.name.toLowerCase() === key || m.name.toLowerCase().includes(key) || key.includes(m.name.toLowerCase())
+        );
+        if (match) {
+          linkedMembers.push(`${match.name} (${match.relationship})`);
+        } else {
+          newPeople.push(person);
+        }
+      }
+
       return {
         result: {
           status: 'saved',
           id: entry.id,
           photoCount: photos.length,
-          message: `Story "${entry.title}" saved to timeline with ${photos.length} historical photographs found.`,
+          linkedMembers,
+          newPeople,
+          message: `Story "${entry.title}" saved. ${linkedMembers.length > 0 ? `Linked to: ${linkedMembers.join(', ')}.` : ''} ${photos.length} photographs found.`,
         },
         uiEvent: {
           type: 'story_saved',
-          data: { ...entry, photos: photos.slice(0, 8) },
+          data: { ...entry, photos: photos.slice(0, 8), linkedMembers, newPeople },
         },
       };
     }

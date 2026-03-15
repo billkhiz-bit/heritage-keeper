@@ -15,10 +15,15 @@ const SYSTEM_INSTRUCTION = `You are the Heritage Keeper — a warm, gentle, emot
 
 ## What you do
 When someone shares a memory, you MUST:
-1. Call save_story with all extracted details (year, title, summary, location, descriptions, cultural context, photo queries)
+1. Call save_story with all extracted details (year, title, summary, location, descriptions, cost_of_living, daily_life, event, photo queries)
 2. Call add_family_member for EVERY person mentioned (with correct generation number)
 3. Respond warmly, commenting on specific details
 4. Ask a follow-up question that encourages deeper storytelling
+
+## Cultural context fields for save_story
+- cost_of_living: Specific prices from the era — house prices, wages, food costs. Use local currency. Be precise.
+- daily_life: What everyday life looked like — technology, household routines, social customs. Be vivid.
+- event: A major world or local event around that time.
 
 ## Generation numbers for add_family_member
 - -3 = great-grandparents
@@ -64,7 +69,10 @@ export class LiveSession {
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: SYSTEM_INSTRUCTION,
-          tools: [{ functionDeclarations: toolDeclarations as any }],
+          tools: [
+            { functionDeclarations: toolDeclarations as any },
+            { googleSearch: {} },
+          ],
         },
         callbacks: {
           onopen: () => {
@@ -103,40 +111,60 @@ export class LiveSession {
     }
   }
 
-  private async handleGeminiMessage(event: any): Promise<void> {
-    const data = event.data;
+  private async handleGeminiMessage(raw: any): Promise<void> {
+    // Parse the message — SDK may pass LiveServerMessage, MessageEvent, or JSON string
+    let data: any;
+    try {
+      if (typeof raw === 'string') {
+        data = JSON.parse(raw);
+      } else if (raw?.data !== undefined) {
+        data = typeof raw.data === 'string' ? JSON.parse(raw.data) : raw.data;
+      } else {
+        data = raw;
+      }
+    } catch {
+      // Not JSON — likely raw audio binary data, skip
+      return;
+    }
     if (!data) return;
 
-    // Handle server content (audio response)
-    if (data.serverContent) {
-      const parts = data.serverContent.modelTurn?.parts || [];
+    // Diagnostic: log message shape once
+    const keys = Object.keys(data);
+    if (keys.length > 0 && !keys.includes('usageMetadata')) {
+      console.log('[Live] Msg keys:', keys.join(', '));
+    }
+
+    // Handle server content — check multiple possible locations
+    const serverContent = data.serverContent;
+    const modelTurn = serverContent?.modelTurn ?? data.modelTurn;
+    if (modelTurn) {
+      const parts = modelTurn.parts || [];
       for (const part of parts) {
         if (part.inlineData) {
-          // Audio data — forward to client
           this.sendToClient({
             type: 'audio',
             mimeType: part.inlineData.mimeType,
             data: part.inlineData.data,
           });
         }
-        if (part.text) {
-          // Text response
+        if (part.text && !part.thought) {
           this.sendToClient({
             type: 'text',
             text: part.text,
           });
         }
       }
+    }
 
-      // Check if turn is complete
-      if (data.serverContent.turnComplete) {
-        this.sendToClient({ type: 'turn_complete' });
-      }
+    // Check if turn is complete
+    if (serverContent?.turnComplete || data.turnComplete) {
+      this.sendToClient({ type: 'turn_complete' });
     }
 
     // Handle tool calls
-    if (data.toolCall) {
-      const functionCalls = data.toolCall.functionCalls || [];
+    const toolCall = data.toolCall ?? serverContent?.toolCall;
+    if (toolCall) {
+      const functionCalls = toolCall.functionCalls || [];
       const functionResponses = [];
 
       for (const fc of functionCalls) {

@@ -15,12 +15,34 @@ export class AudioManager {
   private isRecording = false;
   private audioQueue: ArrayBuffer[] = [];
   private isPlaying = false;
+  private apiKey: string = '';
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 3;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(onMessage: MessageHandler) {
     this.onMessage = onMessage;
   }
 
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts || !this.apiKey) return;
+
+    this.reconnectAttempts++;
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 8000);
+
+    this.onMessage({
+      type: 'status',
+      status: 'connecting',
+      message: `Reconnecting (attempt ${this.reconnectAttempts})...`,
+    });
+
+    this.reconnectTimeout = setTimeout(() => {
+      this.connect(this.apiKey);
+    }, delay);
+  }
+
   connect(apiKey: string): void {
+    this.apiKey = apiKey;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
@@ -29,6 +51,7 @@ export class AudioManager {
     this.ws.onopen = () => {
       // Send init with API key
       this.send({ type: 'init', apiKey });
+      this.reconnectAttempts = 0;
     };
 
     this.ws.onmessage = (event) => {
@@ -49,8 +72,13 @@ export class AudioManager {
       this.onMessage({ type: 'error', message: 'WebSocket connection failed.' });
     };
 
-    this.ws.onclose = () => {
-      this.onMessage({ type: 'status', status: 'disconnected' });
+    this.ws.onclose = (event) => {
+      if (event.code !== 1000 && this.apiKey) {
+        // Unexpected close — try to reconnect
+        this.attemptReconnect();
+      } else {
+        this.onMessage({ type: 'status', status: 'disconnected' });
+      }
     };
   }
 
@@ -178,6 +206,12 @@ export class AudioManager {
   }
 
   disconnect(): void {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    this.reconnectAttempts = this.maxReconnectAttempts; // prevent reconnect after manual disconnect
+
     this.stopRecording();
     if (this.ws) {
       this.send({ type: 'disconnect' });

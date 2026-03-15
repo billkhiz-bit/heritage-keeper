@@ -3,6 +3,7 @@ import { AudioManager, WSMessage } from './AudioManager';
 import HeritageKeeper from './HeritageKeeper';
 import FamilyTree, { FamilyMember } from './FamilyTree';
 import ShareView from './ShareView';
+import ConversationThread from './ConversationThread';
 
 interface HistoricalPhoto {
   url: string;
@@ -20,9 +21,10 @@ interface TimelineEntry {
   nowDescription: string;
   people: string[];
   historicalFacts: string[];
-  culturalContext: { music: string; film: string; event: string };
+  culturalContext: { costOfLiving: string; dailyLife: string; event: string };
   photos: HistoricalPhoto[];
   storyText: string;
+  groundingSources?: string[];
 }
 
 type AgentStatus = 'disconnected' | 'connecting' | 'connected' | 'listening' | 'thinking';
@@ -32,10 +34,18 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
   const [isReady, setIsReady] = useState(false);
 
+  // Load persisted state from localStorage
+  const loadStored = <T,>(key: string, fallback: T): T => {
+    try {
+      const stored = localStorage.getItem(`hk_${key}`);
+      return stored ? JSON.parse(stored) : fallback;
+    } catch { return fallback; }
+  };
+
   // Shared state
   const [status, setStatus] = useState<AgentStatus>('disconnected');
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadStored('timeline', []));
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() => loadStored('family', []));
   const [activeView, setActiveView] = useState<View>('timeline');
   const [textInput, setTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -44,15 +54,32 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loosePhotos, setLoosePhotos] = useState<HistoricalPhoto[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [conversation, setConversation] = useState<{role: 'user' | 'agent', text: string, timestamp: number}[]>([]);
   const audioRef = useRef<AudioManager | null>(null);
 
   const handleUIEvent = useCallback((event: string, data: any) => {
     switch (event) {
       case 'story_saved':
         setTimeline((prev) => {
+          // Match people in story against existing family tree (frontend-side)
+          const people: string[] = data.people || [];
+          const linked: string[] = [];
+          const unlinked: string[] = [];
+          setFamilyMembers((members) => {
+            for (const person of people) {
+              const key = person.toLowerCase();
+              const match = members.find(
+                (m) => m.name.toLowerCase() === key || m.name.toLowerCase().includes(key) || key.includes(m.name.toLowerCase())
+              );
+              if (match) linked.push(`${match.name} (${match.relationship})`);
+              else unlinked.push(person);
+            }
+            return members; // no mutation, just reading
+          });
+          const enriched = { ...data, linkedMembers: linked, newPeople: unlinked };
           const exists = prev.some((e) => e.id === data.id);
-          if (exists) return prev.map((e) => (e.id === data.id ? data : e));
-          return [...prev, data];
+          if (exists) return prev.map((e) => (e.id === data.id ? enriched : e));
+          return [enriched, ...prev]; // newest first
         });
         break;
       case 'photos_found':
@@ -87,6 +114,8 @@ const App: React.FC = () => {
         if (message.status === 'connected') {
           setStatus('connected');
           setError(null);
+        } else if (message.status === 'connecting') {
+          setStatus('connecting');
         } else if (message.status === 'disconnected') {
           setStatus('disconnected');
         }
@@ -97,6 +126,12 @@ const App: React.FC = () => {
       case 'turn_complete':
         setStatus('connected');
         setToolActivity(null);
+        setAgentText((currentAgentText) => {
+          if (currentAgentText) {
+            setConversation(prev => [...prev, {role: 'agent', text: currentAgentText, timestamp: Date.now()}]);
+          }
+          return currentAgentText;
+        });
         break;
       case 'tool_call': {
         setStatus('thinking');
@@ -131,6 +166,15 @@ const App: React.FC = () => {
     }
   }, [handleUIEvent]);
 
+  // Persist timeline and family to localStorage
+  useEffect(() => {
+    if (timeline.length > 0) localStorage.setItem('hk_timeline', JSON.stringify(timeline));
+  }, [timeline]);
+
+  useEffect(() => {
+    if (familyMembers.length > 0) localStorage.setItem('hk_family', JSON.stringify(familyMembers));
+  }, [familyMembers]);
+
   useEffect(() => {
     if (!isReady) return;
     const audio = new AudioManager(handleMessage);
@@ -154,6 +198,7 @@ const App: React.FC = () => {
     const msg = text || textInput.trim();
     if (!msg || !audioRef.current) return;
     setAgentText('');
+    setConversation(prev => [...prev, {role: 'user', text: msg, timestamp: Date.now()}]);
     audioRef.current.sendText(msg);
     setTextInput('');
     setStatus('thinking');
@@ -216,16 +261,32 @@ const App: React.FC = () => {
     );
   }
 
-  // ─── Filter timeline by search ───
-  const filteredTimeline = searchQuery.trim()
+  // ─── Filter timeline + family by search ───
+  const q = searchQuery.trim().toLowerCase();
+  const filteredTimeline = q
     ? timeline.filter(
         (e) =>
-          e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          e.people?.some((p) => p.toLowerCase().includes(searchQuery.toLowerCase()))
+          e.title.toLowerCase().includes(q) ||
+          e.summary.toLowerCase().includes(q) ||
+          e.year.toLowerCase().includes(q) ||
+          e.location?.toLowerCase().includes(q) ||
+          e.storyText?.toLowerCase().includes(q) ||
+          e.people?.some((p) => p.toLowerCase().includes(q)) ||
+          e.historicalFacts?.some((f) => f.toLowerCase().includes(q)) ||
+          e.culturalContext?.costOfLiving?.toLowerCase().includes(q) ||
+          e.culturalContext?.dailyLife?.toLowerCase().includes(q) ||
+          e.culturalContext?.event?.toLowerCase().includes(q)
       )
     : timeline;
+
+  const filteredMembers = q
+    ? familyMembers.filter(
+        (m) =>
+          m.name.toLowerCase().includes(q) ||
+          m.relationship.toLowerCase().includes(q) ||
+          m.partner?.toLowerCase().includes(q)
+      )
+    : familyMembers;
 
   return (
     <div>
@@ -262,11 +323,20 @@ const App: React.FC = () => {
             <span>&#x1f50d;</span>
             <input
               type="text"
-              placeholder="Search memories..."
+              placeholder="Search memories, people, places..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search memories"
+              aria-label="Search memories, people, and places"
             />
+            {searchQuery && (
+              <button
+                className="search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                &times;
+              </button>
+            )}
           </div>
           <div className="nav-avatar">
             <span>&#x1f464;</span>
@@ -276,6 +346,18 @@ const App: React.FC = () => {
 
       {/* ─── Main Content ─── */}
       <div className="app-layout">
+
+        {/* Search results banner */}
+        {q && (
+          <div className="search-results-bar fade-in">
+            <span>
+              Found {filteredTimeline.length} {filteredTimeline.length === 1 ? 'memory' : 'memories'}
+              {filteredMembers.length !== familyMembers.length && `, ${filteredMembers.length} family members`}
+              {' '}matching "{searchQuery}"
+            </span>
+            <button className="search-clear-link" onClick={() => setSearchQuery('')}>Clear search</button>
+          </div>
+        )}
 
         {/* Status bar */}
         <div className="status-bar" role="status" aria-live="polite" aria-label={`Connection status: ${statusLabel[status]}`}>
@@ -311,6 +393,35 @@ const App: React.FC = () => {
               rows={1}
             />
             <div className="input-actions">
+              <label className="btn-icon" title="Upload a family photo" aria-label="Upload a family photo" style={{ cursor: 'pointer' }}>
+                &#x1f4f7;
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                      const dataUrl = reader.result as string;
+                      try {
+                        const resp = await fetch('/api/upload-photo', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ image: dataUrl, title: file.name }),
+                        });
+                        const { url } = await resp.json();
+                        setLoosePhotos(prev => [...prev, { url, title: file.name.replace(/\.[^.]+$/, ''), description: 'Family photo' }]);
+                      } catch {
+                        setError('Failed to upload photo');
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
               <button
                 className={`btn-icon ${isRecording ? 'recording' : ''}`}
                 onClick={toggleRecording}
@@ -329,6 +440,16 @@ const App: React.FC = () => {
               </button>
             </div>
           </div>
+          {isRecording && (
+            <div className="recording-indicator fade-in">
+              <div className="waveform-bars">
+                {[...Array(12)].map((_, i) => (
+                  <div key={i} className="waveform-bar" style={{ animationDelay: `${i * 0.05}s` }} />
+                ))}
+              </div>
+              <span className="recording-label">Listening... tap the mic button when finished</span>
+            </div>
+          )}
         </div>
 
         {/* Agent response */}
@@ -337,6 +458,9 @@ const App: React.FC = () => {
             <p>{agentText}</p>
           </div>
         )}
+
+        {/* Conversation history */}
+        <ConversationThread messages={conversation} />
 
         {/* Error — dismissible */}
         {error && (
@@ -356,15 +480,16 @@ const App: React.FC = () => {
         {activeView === 'timeline' && (
           <HeritageKeeper
             timeline={filteredTimeline}
-            familyMembers={familyMembers}
+            familyMembers={filteredMembers}
             loosePhotos={loosePhotos}
             onViewTree={() => setActiveView('tree')}
+            onPromptClick={(prompt) => sendText(prompt)}
           />
         )}
 
         {activeView === 'tree' && (
           <FamilyTree
-            members={familyMembers}
+            members={filteredMembers}
             onMemberClick={() => setActiveView('timeline')}
             onAddMember={(member) => {
               setFamilyMembers((prev) => {
