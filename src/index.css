@@ -1596,6 +1596,34 @@ button.tree-member-card {
   font-weight: 600;
 }
 
+/* Processing indicator — shown after recording, before response */
+.processing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  border: 1px solid var(--primary-mid);
+}
+
+.processing-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--primary-mid);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.processing-label {
+  font-size: 13px;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
 /* Photo count badge */
 .photo-count-badge {
   position: absolute;

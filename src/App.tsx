@@ -218,6 +218,8 @@ const App: React.FC = () => {
     if (!audioRef.current) return;
     if (isRecording) {
       audioRef.current.stopRecording();
+      setStatus('thinking');
+      setToolActivity('Processing your voice message...');
     } else {
       if (!audioRef.current.connected) {
         setError('Not connected yet. Please wait for the status to show "Ready".');
@@ -590,6 +592,14 @@ const App: React.FC = () => {
                 ))}
               </div>
               <span className="recording-label">Listening... tap the mic button when finished</span>
+            </div>
+          )}
+          {!isRecording && status === 'thinking' && (
+            <div className="processing-indicator fade-in" role="status" aria-live="polite">
+              <div className="processing-spinner" />
+              <span className="processing-label">
+                {toolActivity || 'Heritage Keeper is thinking...'}
+              </span>
             </div>
           )}
         </div>
