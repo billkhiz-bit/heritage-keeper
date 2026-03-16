@@ -30,6 +30,7 @@ interface TimelineEntry {
   photos: HistoricalPhoto[];
   storyText: string;
   groundingSources?: string[];
+  comments?: string[];
 }
 
 type AgentStatus = 'disconnected' | 'connecting' | 'connected' | 'listening' | 'thinking';
@@ -51,7 +52,7 @@ const App: React.FC = () => {
   const [status, setStatus] = useState<AgentStatus>('disconnected');
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadStored('timeline', []));
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() => loadStored('family', []));
-  const [activeView, setActiveView] = useState<View>('timeline');
+  const [activeView, setActiveView] = useState<View>('tree');
   const [textInput, setTextInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [agentText, setAgentText] = useState('');
@@ -90,6 +91,8 @@ const App: React.FC = () => {
           if (exists) return prev.map((e) => (e.id === data.id ? enriched : e));
           return [enriched, ...prev]; // newest first
         });
+        setActiveView('timeline');
+        setViewingMember(null);
         break;
       case 'photos_found':
         setLoosePhotos(data || []);
@@ -272,6 +275,14 @@ const App: React.FC = () => {
       ...entry,
       photos: entry.photos.filter(p => p.url !== photo.url),
     })));
+  };
+
+  const handleAddComment = (entryId: string, comment: string) => {
+    setTimeline(prev => prev.map(entry =>
+      entry.id === entryId
+        ? { ...entry, comments: [...(entry.comments || []), comment] }
+        : entry
+    ));
   };
 
   const handleStart = () => {
@@ -598,6 +609,7 @@ const App: React.FC = () => {
             onPromptClick={(prompt) => sendText(prompt)}
             onUpdatePhoto={handleUpdatePhoto}
             onDeletePhoto={handleDeletePhoto}
+            onAddComment={handleAddComment}
             initialLightboxPhoto={initialLightboxPhoto}
             hasStartedConversation={hasStartedConversation}
           />

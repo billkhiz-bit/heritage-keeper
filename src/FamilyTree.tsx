@@ -40,6 +40,30 @@ function getInitials(name: string): string {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
+const TreeConnectors: React.FC<{ parentCount: number; childCount: number }> = ({ parentCount, childCount }) => {
+  if (parentCount === 0 || childCount === 0) return null;
+  const width = Math.max(parentCount, childCount) * 160;
+  const midY = 20;
+
+  return (
+    <svg width="100%" height="40" viewBox={`0 0 ${width} 40`} style={{ display: 'block', margin: '0 auto', maxWidth: width }} preserveAspectRatio="xMidYMid meet">
+      {/* Horizontal line connecting all parents */}
+      <line x1={width * 0.2} y1={0} x2={width * 0.8} y2={0} stroke="var(--primary-mid)" strokeWidth="2" />
+      {/* Vertical drop to children */}
+      <line x1={width / 2} y1={0} x2={width / 2} y2={midY} stroke="var(--primary-mid)" strokeWidth="2" />
+      {/* Horizontal line connecting all children */}
+      <line x1={width * 0.2} y1={midY} x2={width * 0.8} y2={midY} stroke="var(--primary-mid)" strokeWidth="2" />
+      {/* Vertical drops to each child */}
+      {Array.from({ length: childCount }).map((_, i) => {
+        const x = childCount === 1
+          ? width / 2
+          : width * (0.2 + (i / (childCount - 1)) * 0.6);
+        return <line key={i} x1={x} y1={midY} x2={x} y2={40} stroke="var(--primary-mid)" strokeWidth="2" />;
+      })}
+    </svg>
+  );
+};
+
 const STORY_STARTERS = [
   "Tell me about Grandma's first house...",
   "What was the funniest thing Uncle ever did?",
@@ -153,18 +177,37 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onSt
         {members.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🌳</div>
-            <h3>Your Family Tree Starts Here</h3>
-            <p>
-              Share memories mentioning family members and the tree will build itself,
-              or add members manually using the form on the left.
-            </p>
+            <h3 style={{ fontFamily: 'var(--font-serif)' }}>Build Your Family Tree</h3>
+            <div style={{ maxWidth: 400, margin: '24px auto', textAlign: 'left' }}>
+              <div className="guided-step">
+                <div className="guided-step-number">1</div>
+                <div>
+                  <p className="guided-step-title">Start with yourself</p>
+                  <p className="guided-step-desc">Add your name and set generation to "You &amp; Siblings"</p>
+                </div>
+              </div>
+              <div className="guided-step">
+                <div className="guided-step-number">2</div>
+                <div>
+                  <p className="guided-step-title">Add your parents</p>
+                  <p className="guided-step-desc">Use the form on the left. Set generation to "Parents"</p>
+                </div>
+              </div>
+              <div className="guided-step">
+                <div className="guided-step-number">3</div>
+                <div>
+                  <p className="guided-step-title">Share memories</p>
+                  <p className="guided-step-desc">Tell Heritage Keeper stories about your family - it will find photos and fill in the details</p>
+                </div>
+              </div>
+            </div>
             {onStoryStarter && (
               <button
                 className="btn-post"
                 onClick={() => onStoryStarter("My grandmother's name was...")}
-                style={{ marginTop: 16 }}
+                style={{ marginTop: 8 }}
               >
-                Share a memory to get started
+                Or share a memory to get started
               </button>
             )}
           </div>
@@ -172,7 +215,12 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onSt
           <div>
             {sortedGens.map(([gen, genMembers], idx) => (
               <React.Fragment key={gen}>
-                {idx > 0 && <div className="tree-connector" />}
+                {idx > 0 && (
+                  <TreeConnectors
+                    parentCount={sortedGens[idx - 1]?.[1].length || 0}
+                    childCount={genMembers.length}
+                  />
+                )}
                 <div className="generation-section">
                   <p className="generation-label">
                     {GENERATION_LABELS[gen] || `Generation ${gen}`}

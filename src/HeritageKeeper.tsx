@@ -27,6 +27,7 @@ interface TimelineEntry {
   groundingSources?: string[];
   linkedMembers?: string[];
   newPeople?: string[];
+  comments?: string[];
 }
 
 interface Props {
@@ -38,6 +39,7 @@ interface Props {
   onPromptClick?: (prompt: string) => void;
   onUpdatePhoto?: (photo: HistoricalPhoto) => void;
   onDeletePhoto?: (photo: HistoricalPhoto) => void;
+  onAddComment?: (entryId: string, comment: string) => void;
   initialLightboxPhoto?: HistoricalPhoto | null;
   hasStartedConversation?: boolean;
 }
@@ -63,9 +65,10 @@ const ONBOARDING_PROMPTS = [
   "What's a family recipe or tradition that's been passed down?",
 ];
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, initialLightboxPhoto, hasStartedConversation }) => {
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, onAddComment, initialLightboxPhoto, hasStartedConversation }) => {
   const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
+  const [memberFilter, setMemberFilter] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editPeople, setEditPeople] = useState('');
@@ -87,10 +90,22 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
     (a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0)
   );
 
-  // Filter by location if active
-  const sortedEntries = locationFilter
+  // Filter by location and/or member if active
+  let filteredEntries = locationFilter
     ? allEntries.filter((e) => e.location === locationFilter)
     : allEntries;
+
+  if (memberFilter) {
+    const mf = memberFilter.toLowerCase();
+    filteredEntries = filteredEntries.filter((e) =>
+      e.people?.some((p) => {
+        const key = p.toLowerCase();
+        return key === mf || key.includes(mf) || mf.includes(key);
+      })
+    );
+  }
+
+  const sortedEntries = filteredEntries;
 
   const allLocations = [...new Set(timeline.map((e) => e.location).filter(Boolean))];
 
@@ -263,6 +278,14 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
           </div>
         )}
 
+        {/* Member filter indicator */}
+        {memberFilter && (
+          <div className="search-results-bar fade-in" style={{ marginBottom: 12 }}>
+            <span>Showing stories about <strong>{memberFilter}</strong></span>
+            <button className="search-clear-link" onClick={() => setMemberFilter(null)}>Show all</button>
+          </div>
+        )}
+
         {/* Timeline */}
         {sortedEntries.length > 0 ? (
           <div>
@@ -401,6 +424,38 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                         <summary>What you told me</summary>
                         <p>"{entry.storyText}"</p>
                       </details>
+
+                      {/* Family notes */}
+                      {entry.comments && entry.comments.length > 0 && (
+                        <div style={{ marginTop: 8 }}>
+                          {entry.comments.map((comment, ci) => (
+                            <div
+                              key={ci}
+                              style={{
+                                padding: '6px 10px',
+                                background: 'var(--bg)',
+                                borderRadius: 'var(--radius-sm)',
+                                marginBottom: 4,
+                                fontFamily: 'var(--font-handwritten)',
+                                fontSize: 15,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              {comment}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        className="add-comment-btn"
+                        onClick={() => {
+                          const note = window.prompt('Add a family note or correction:');
+                          if (note?.trim()) onAddComment?.(entry.id, note.trim());
+                        }}
+                        style={{ marginTop: 6 }}
+                      >
+                        💬 Add a family note
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -550,7 +605,16 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                       <p className="member-list-rel">{member.relationship}</p>
                     </div>
                   </div>
-                  <button className="member-view-link" onClick={() => onViewMember?.(member.name)}>Stories</button>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button className="member-view-link" onClick={() => onViewMember?.(member.name)}>Profile</button>
+                    <button
+                      className="member-view-link"
+                      onClick={() => setMemberFilter(memberFilter === member.name ? null : member.name)}
+                      style={{ color: memberFilter === member.name ? 'var(--primary)' : 'var(--text-muted)' }}
+                    >
+                      {memberFilter === member.name ? '\u2713 Filtered' : 'Filter'}
+                    </button>
+                  </div>
                 </div>
               ))}
               {familyMembers.length > 8 && (
