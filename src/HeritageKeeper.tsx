@@ -567,15 +567,21 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
       <aside className="sidebar">
         {/* Heritage Span card */}
         {allEntries.length >= 2 && (() => {
-          const byYear = [...allEntries].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0));
-          const earliest = byYear[0];
-          const latest = byYear[byYear.length - 1];
-          const span = (parseInt(latest.year) || 0) - (parseInt(earliest.year) || 0);
+          // Extract valid 4-digit years, filtering out entries where year can't be parsed
+          const withYears = allEntries
+            .map(e => ({ ...e, parsedYear: parseInt(e.year.match(/\d{4}/)?.[0] || '') }))
+            .filter(e => e.parsedYear >= 1800 && e.parsedYear <= 2100)
+            .sort((a, b) => a.parsedYear - b.parsedYear);
+          if (withYears.length < 2) return null;
+          const earliest = withYears[0];
+          const latest = withYears[withYears.length - 1];
+          const span = latest.parsedYear - earliest.parsedYear;
+          if (span <= 0) return null;
           return (
             <div className="sidebar-card fade-in">
               <h4 className="sidebar-card-title purple">&#x23f3; Heritage Span</h4>
               <div style={{ textAlign: 'center', padding: '8px 0' }}>
-                <p style={{ fontSize: 32, fontWeight: 800, color: 'var(--primary)' }}>{span > 0 ? `${span} years` : '\u2014'}</p>
+                <p style={{ fontSize: 32, fontWeight: 800, color: 'var(--primary)' }}>{span} years</p>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>of family history preserved</p>
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
