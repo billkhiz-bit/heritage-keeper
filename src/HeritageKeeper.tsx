@@ -275,6 +275,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
               <button
                 className="place-tag place-tag-clear"
                 onClick={() => setLocationFilter(null)}
+                aria-label="Clear location filter"
               >
                 All &times;
               </button>
@@ -284,6 +285,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                 key={i}
                 className={`place-tag ${locationFilter === l ? 'place-tag-active' : ''}`}
                 onClick={() => setLocationFilter(locationFilter === l ? null : l)}
+                aria-label={`Filter by ${l}`}
               >
                 {l} ({locationCounts.get(l) || 0})
               </button>
@@ -298,7 +300,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
         {memberFilter && (
           <div className="search-results-bar fade-in" style={{ marginBottom: 12 }}>
             <span>Showing stories about <strong>{memberFilter}</strong></span>
-            <button className="search-clear-link" onClick={() => setMemberFilter(null)}>Show all</button>
+            <button className="search-clear-link" onClick={() => setMemberFilter(null)} aria-label="Clear member filter">Show all</button>
           </div>
         )}
 
@@ -690,7 +692,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
             </p>
           )}
 
-          <button className="invite-btn" onClick={onViewTree}>View Full Family Tree</button>
+          <button className="invite-btn" onClick={onViewTree} aria-label="View full family tree">View Full Family Tree</button>
         </div>
 
         {/* Locations card */}

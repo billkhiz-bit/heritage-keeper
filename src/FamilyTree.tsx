@@ -154,6 +154,7 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onRenameMember, o
             setName('');
             setRelationship('');
           }}
+          aria-label="Save family member to tree"
         >
           &#x1f4be; Save to Tree
         </button>
@@ -209,6 +210,7 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onRenameMember, o
                 className="btn-post"
                 onClick={() => onStoryStarter("My grandmother's name was...")}
                 style={{ marginTop: 8 }}
+                aria-label="Share a memory to get started"
               >
                 Or share a memory to get started
               </button>

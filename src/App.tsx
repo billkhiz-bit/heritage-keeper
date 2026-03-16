@@ -367,6 +367,7 @@ const App: React.FC = () => {
           onClick={handleStart}
           disabled={!apiKey.trim()}
           className="landing-btn"
+          aria-label="Start conversation"
         >
           Start Conversation
         </button>
@@ -417,18 +418,21 @@ const App: React.FC = () => {
           <button
             className={`nav-tab ${activeView === 'timeline' ? 'active' : ''}`}
             onClick={() => setActiveView('timeline')}
+            aria-label="View timeline"
           >
             Timeline
           </button>
           <button
             className={`nav-tab ${activeView === 'tree' ? 'active' : ''}`}
             onClick={() => setActiveView('tree')}
+            aria-label="View family tree"
           >
             Family Tree
           </button>
           <button
             className={`nav-tab ${activeView === 'share' ? 'active' : ''}`}
             onClick={() => setActiveView('share')}
+            aria-label="View share and export"
           >
             Share
           </button>
