@@ -1821,6 +1821,20 @@ button.tree-member-card {
   }
 }
 
+/* Heritage Map */
+.map-container {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.map-container .leaflet-container {
+  font-family: var(--font);
+}
+
 /* Fix 3: Photo caption clipping */
 @media (max-width: 480px) {
   .entry-photo-caption {

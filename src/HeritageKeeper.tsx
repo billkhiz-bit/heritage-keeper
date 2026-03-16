@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FamilyMember } from './FamilyTree';
+import MapView from './MapView';
 
 interface HistoricalPhoto {
   url: string;
@@ -40,6 +41,7 @@ interface Props {
   onUpdatePhoto?: (photo: HistoricalPhoto) => void;
   onDeletePhoto?: (photo: HistoricalPhoto) => void;
   onAddComment?: (entryId: string, comment: string) => void;
+  onDeleteComment?: (entryId: string, commentIndex: number) => void;
   initialLightboxPhoto?: HistoricalPhoto | null;
   hasStartedConversation?: boolean;
 }
@@ -65,13 +67,15 @@ const ONBOARDING_PROMPTS = [
   "What's a family recipe or tradition that's been passed down?",
 ];
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, onAddComment, initialLightboxPhoto, hasStartedConversation }) => {
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, onAddComment, onDeleteComment, initialLightboxPhoto, hasStartedConversation }) => {
   const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [memberFilter, setMemberFilter] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editPeople, setEditPeople] = useState('');
+  const [openNoteEntryId, setOpenNoteEntryId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   useEffect(() => {
     if (initialLightboxPhoto) setLightboxPhoto(initialLightboxPhoto);
@@ -112,6 +116,14 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
   // Count entries per location
   const locationCounts = new Map<string, number>();
   timeline.forEach((e) => { if (e.location) locationCounts.set(e.location, (locationCounts.get(e.location) || 0) + 1); });
+
+  const locationData = allLocations.map(name => ({
+    name,
+    count: locationCounts.get(name) || 0,
+    entries: allEntries
+      .filter(e => e.location === name)
+      .map(e => ({ year: e.year, title: e.title })),
+  }));
 
   const latestEntry = allEntries.length > 0 ? allEntries[0] : null;
 
@@ -278,6 +290,9 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
           </div>
         )}
 
+        {/* Heritage Map */}
+        {locationData.length >= 2 && <MapView locations={locationData} />}
+
         {/* Member filter indicator */}
         {memberFilter && (
           <div className="search-results-bar fade-in" style={{ marginBottom: 12 }}>
@@ -429,33 +444,60 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                       {entry.comments && entry.comments.length > 0 && (
                         <div style={{ marginTop: 8 }}>
                           {entry.comments.map((comment, ci) => (
-                            <div
-                              key={ci}
-                              style={{
-                                padding: '6px 10px',
-                                background: 'var(--bg)',
-                                borderRadius: 'var(--radius-sm)',
-                                marginBottom: 4,
-                                fontFamily: 'var(--font-handwritten)',
-                                fontSize: 15,
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              {comment}
+                            <div key={ci} style={{ padding: '8px 12px', background: 'var(--bg)', borderRadius: 'var(--radius-sm)', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                              <p style={{ fontSize: 15, color: 'var(--text-secondary)', fontFamily: 'var(--font-handwritten)', lineHeight: 1.4, flex: 1 }}>{comment}</p>
+                              <button
+                                onClick={() => onDeleteComment?.(entry.id, ci)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: '0 2px' }}
+                                aria-label="Delete note"
+                              >&times;</button>
                             </div>
                           ))}
                         </div>
                       )}
-                      <button
-                        className="add-comment-btn"
-                        onClick={() => {
-                          const note = window.prompt('Add a family note or correction:');
-                          if (note?.trim()) onAddComment?.(entry.id, note.trim());
-                        }}
-                        style={{ marginTop: 6 }}
-                      >
-                        💬 Add a family note
-                      </button>
+                      {openNoteEntryId === entry.id ? (
+                        <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                          <textarea
+                            className="lightbox-field notes"
+                            placeholder="Write a family note or correction..."
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            rows={2}
+                            autoFocus
+                            style={{ flex: 1, minHeight: 48 }}
+                          />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <button
+                              className="lightbox-save-btn"
+                              onClick={() => {
+                                if (noteText.trim()) {
+                                  onAddComment?.(entry.id, noteText.trim());
+                                  setNoteText('');
+                                  setOpenNoteEntryId(null);
+                                }
+                              }}
+                              style={{ padding: '6px 14px', fontSize: 12 }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="lightbox-delete-btn"
+                              onClick={() => { setOpenNoteEntryId(null); setNoteText(''); }}
+                              style={{ padding: '6px 14px', fontSize: 11 }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          className="add-comment-btn"
+                          onClick={() => setOpenNoteEntryId(entry.id)}
+                          style={{ marginTop: 6 }}
+                        >
+                          &#x1f4ac; Add a family note
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

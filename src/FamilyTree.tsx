@@ -12,6 +12,7 @@ export interface FamilyMember {
 interface Props {
   members: FamilyMember[];
   onMemberClick?: (name: string) => void;
+  onRenameMember?: (oldName: string, newName: string) => void;
   onAddMember?: (member: FamilyMember) => void;
   onStoryStarter?: (prompt: string) => void;
 }
@@ -72,10 +73,12 @@ const STORY_STARTERS = [
   "What was school like for Mum/Dad?",
 ];
 
-const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onStoryStarter }) => {
+const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onRenameMember, onAddMember, onStoryStarter }) => {
   const [name, setName] = useState('');
   const [generation, setGeneration] = useState('-1');
   const [relationship, setRelationship] = useState('');
+  const [editingMember, setEditingMember] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   const generations = new Map<number, FamilyMember[]>();
   members.forEach((m) => {
@@ -248,7 +251,36 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onSt
                           )}
                         </div>
 
-                        <p className="tree-member-name">{member.name}</p>
+                        {editingMember === member.name ? (
+                          <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
+                            <input
+                              className="tree-input"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && editName.trim()) {
+                                  onRenameMember?.(member.name, editName.trim());
+                                  setEditingMember(null);
+                                }
+                                if (e.key === 'Escape') setEditingMember(null);
+                              }}
+                              style={{ width: 100, padding: '4px 8px', fontSize: 12, textAlign: 'center' }}
+                            />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); if (editName.trim()) { onRenameMember?.(member.name, editName.trim()); setEditingMember(null); } }}
+                              style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}
+                            >&#x2713;</button>
+                          </div>
+                        ) : (
+                          <p
+                            className="tree-member-name"
+                            onDoubleClick={(e) => { e.stopPropagation(); setEditingMember(member.name); setEditName(member.name); }}
+                            title="Double-click to rename"
+                          >
+                            {member.name}
+                          </p>
+                        )}
                         <p className="tree-member-rel">{member.relationship}</p>
 
                         {member.partner && (

@@ -285,6 +285,29 @@ const App: React.FC = () => {
     ));
   };
 
+  const handleDeleteComment = (entryId: string, commentIndex: number) => {
+    setTimeline(prev => prev.map(entry =>
+      entry.id === entryId
+        ? { ...entry, comments: (entry.comments || []).filter((_, i) => i !== commentIndex) }
+        : entry
+    ));
+  };
+
+  const handleRenameMember = (oldName: string, newName: string) => {
+    setFamilyMembers(prev => prev.map(m =>
+      m.name.toLowerCase() === oldName.toLowerCase()
+        ? { ...m, name: newName }
+        : m
+    ));
+    // Also update any timeline entries that reference the old name
+    setTimeline(prev => prev.map(entry => ({
+      ...entry,
+      people: entry.people.map(p =>
+        p.toLowerCase() === oldName.toLowerCase() ? newName : p
+      ),
+    })));
+  };
+
   const handleStart = () => {
     if (apiKey.trim()) setIsReady(true);
   };
@@ -610,6 +633,7 @@ const App: React.FC = () => {
             onUpdatePhoto={handleUpdatePhoto}
             onDeletePhoto={handleDeletePhoto}
             onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
             initialLightboxPhoto={initialLightboxPhoto}
             hasStartedConversation={hasStartedConversation}
           />
@@ -619,6 +643,7 @@ const App: React.FC = () => {
           <FamilyTree
             members={filteredMembers}
             onMemberClick={() => setActiveView('timeline')}
+            onRenameMember={handleRenameMember}
             onAddMember={(member) => {
               setFamilyMembers((prev) => {
                 const key = member.name.toLowerCase();
