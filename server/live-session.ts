@@ -223,8 +223,13 @@ export class LiveSession {
   sendAudio(audioData: Buffer | Uint8Array): void {
     if (!this.session || !this.isConnected) return;
     try {
+      // Convert raw PCM to base64 and send as inline data
+      const base64 = Buffer.from(audioData).toString('base64');
       this.session.sendRealtimeInput({
-        audio: new Blob([new Uint8Array(audioData)], { type: 'audio/pcm;rate=16000' }) as any,
+        audio: {
+          data: base64,
+          mimeType: 'audio/pcm;rate=16000',
+        },
       });
     } catch (err) {
       console.error('[Live] Failed to send audio:', err);
