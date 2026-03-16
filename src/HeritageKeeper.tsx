@@ -34,6 +34,7 @@ interface Props {
   familyMembers: FamilyMember[];
   loosePhotos: HistoricalPhoto[];
   onViewTree: () => void;
+  onViewMember?: (name: string) => void;
   onPromptClick?: (prompt: string) => void;
   onUpdatePhoto?: (photo: HistoricalPhoto) => void;
   onDeletePhoto?: (photo: HistoricalPhoto) => void;
@@ -61,7 +62,7 @@ const ONBOARDING_PROMPTS = [
   "What's a family recipe or tradition that's been passed down?",
 ];
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onPromptClick, onUpdatePhoto, onDeletePhoto, initialLightboxPhoto }) => {
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, initialLightboxPhoto }) => {
   const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
@@ -97,6 +98,14 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
   timeline.forEach((e) => { if (e.location) locationCounts.set(e.location, (locationCounts.get(e.location) || 0) + 1); });
 
   const latestEntry = allEntries.length > 0 ? allEntries[0] : null;
+
+  // Auto-suggest family members when typing in the "Who is in this photo?" field
+  const peopleSuggestions = editPeople.trim()
+    ? familyMembers.filter(m => {
+        const typed = editPeople.split(',').pop()?.trim().toLowerCase() || '';
+        return typed.length >= 2 && m.name.toLowerCase().includes(typed) && !editPeople.toLowerCase().includes(m.name.toLowerCase());
+      })
+    : [];
 
   // Render a photo grid (clickable → lightbox)
   const renderPhotoGrid = (photos: HistoricalPhoto[]) => (
@@ -165,6 +174,29 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                   style={{ flex: 1 }}
                 />
               </div>
+              {peopleSuggestions.length > 0 && (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                  {peopleSuggestions.slice(0, 5).map((m, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        const parts = editPeople.split(',').map(s => s.trim()).filter(Boolean);
+                        parts.pop(); // remove partial match
+                        parts.push(m.name);
+                        setEditPeople(parts.join(', ') + ', ');
+                      }}
+                      style={{
+                        padding: '3px 10px', borderRadius: 20, border: '1px solid var(--primary-mid)',
+                        background: 'var(--primary-light)', color: 'var(--primary)', fontSize: 12,
+                        fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)',
+                      }}
+                      aria-label={`Add ${m.name} to photo`}
+                    >
+                      + {m.name} ({m.relationship})
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="lightbox-actions">
                 <button
                   className="lightbox-delete-btn"
@@ -500,15 +532,19 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
               {familyMembers.slice(0, 8).map((member, i) => (
                 <div key={i} className="member-list-item">
                   <div className="member-list-left">
-                    <div className="member-avatar" style={{ background: getAvatarColour(member.name) }}>
-                      {getInitials(member.name)}
+                    <div className="member-avatar" style={{ background: member.profilePhotoUrl ? 'transparent' : getAvatarColour(member.name) }}>
+                      {member.profilePhotoUrl ? (
+                        <img src={member.profilePhotoUrl} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ) : (
+                        getInitials(member.name)
+                      )}
                     </div>
                     <div>
                       <p className="member-list-name">{member.name}</p>
                       <p className="member-list-rel">{member.relationship}</p>
                     </div>
                   </div>
-                  <button className="member-view-link" onClick={onViewTree}>View Tree</button>
+                  <button className="member-view-link" onClick={() => onViewMember?.(member.name)}>Stories</button>
                 </div>
               ))}
               {familyMembers.length > 8 && (

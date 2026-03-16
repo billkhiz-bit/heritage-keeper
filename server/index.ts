@@ -20,6 +20,9 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 // Store uploaded images in memory (base64)
 const uploadedImages = new Map<string, string>();
 
+// Store API keys by session ID (server-side only — never sent back to client)
+const sessionApiKeys = new Map<string, string>();
+
 // Parse JSON bodies (must come before static middleware)
 app.use(express.json({ limit: '5mb' }));
 
@@ -48,12 +51,17 @@ app.post('/api/upload-photo', (req, res) => {
   }
 });
 
-// Photo analysis endpoint — Gemini Vision
+// Photo analysis endpoint — Gemini Vision (uses server-stored API key)
 app.post('/api/analyse-photo', async (req, res) => {
   try {
-    const { image, apiKey } = req.body;
-    if (!image || !apiKey) {
-      return res.status(400).json({ error: 'Image and API key required' });
+    const { image, sessionId } = req.body;
+    if (!image || !sessionId) {
+      return res.status(400).json({ error: 'Image and session ID required' });
+    }
+
+    const apiKey = sessionApiKeys.get(sessionId);
+    if (!apiKey) {
+      return res.status(401).json({ error: 'Session not found. Please reconnect.' });
     }
 
     const { GoogleGenAI } = await import('@google/genai');
@@ -142,6 +150,9 @@ wss.on('connection', (ws: WebSocket) => {
             // Create state with optional session ID for persistence
             state = new HeritageState(message.sessionId || undefined);
             await state.load();
+
+            // Store API key server-side for REST endpoints (Vision analysis)
+            sessionApiKeys.set(state.getSessionId(), message.apiKey);
 
             // Send session ID back so client can reconnect to same session
             ws.send(

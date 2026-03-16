@@ -6,6 +6,7 @@ export interface FamilyMember {
   generation: number;
   partner?: string;
   storyCount: number;
+  profilePhotoUrl?: string;
 }
 
 interface Props {
@@ -180,9 +181,13 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onSt
 
                         <div
                           className="tree-member-avatar"
-                          style={{ background: getAvatarColour(member.name) }}
+                          style={{ background: member.profilePhotoUrl ? 'transparent' : getAvatarColour(member.name) }}
                         >
-                          {getInitials(member.name)}
+                          {member.profilePhotoUrl ? (
+                            <img src={member.profilePhotoUrl} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                          ) : (
+                            getInitials(member.name)
+                          )}
                         </div>
 
                         <p className="tree-member-name">{member.name}</p>

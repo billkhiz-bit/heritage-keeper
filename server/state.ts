@@ -7,6 +7,7 @@ export interface FamilyMemberData {
   generation: number; // -3 great-grandparents ... 0 self ... +2 grandchildren
   partner?: string;
   storyCount: number;
+  profilePhotoUrl?: string;
 }
 
 export interface HistoricalPhoto {
@@ -123,6 +124,15 @@ export class HeritageState {
     this.familyMembers.set(key, member);
     this.persist();
     return member;
+  }
+
+  updateMemberPhoto(name: string, photoUrl: string): void {
+    const key = name.toLowerCase();
+    const member = this.familyMembers.get(key);
+    if (member) {
+      member.profilePhotoUrl = photoUrl;
+      this.persist();
+    }
   }
 
   getFamilyTree(): FamilyMemberData[] {

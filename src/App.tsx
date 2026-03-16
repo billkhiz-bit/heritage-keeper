@@ -3,6 +3,7 @@ import { AudioManager, WSMessage } from './AudioManager';
 import HeritageKeeper from './HeritageKeeper';
 import FamilyTree, { FamilyMember } from './FamilyTree';
 import ShareView from './ShareView';
+import MemberDetail from './MemberDetail';
 import ConversationThread from './ConversationThread';
 
 interface HistoricalPhoto {
@@ -59,6 +60,7 @@ const App: React.FC = () => {
   const [loosePhotos, setLoosePhotos] = useState<HistoricalPhoto[]>([]);
   const [initialLightboxPhoto, setInitialLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewingMember, setViewingMember] = useState<string | null>(null);
   const [conversation, setConversation] = useState<{role: 'user' | 'agent', text: string, timestamp: number}[]>([]);
   const [photoAnalysis, setPhotoAnalysis] = useState<string | null>(null);
   const audioRef = useRef<AudioManager | null>(null);
@@ -232,6 +234,14 @@ const App: React.FC = () => {
       ...entry,
       photos: entry.photos.map(p => p.url === updated.url ? updated : p),
     })));
+  };
+
+  const handleSetProfilePhoto = (memberName: string, photoUrl: string) => {
+    setFamilyMembers(prev => prev.map(m =>
+      m.name.toLowerCase() === memberName.toLowerCase()
+        ? { ...m, profilePhotoUrl: photoUrl }
+        : m
+    ));
   };
 
   const handleDeletePhoto = (photo: HistoricalPhoto) => {
@@ -454,11 +464,12 @@ const App: React.FC = () => {
                         setLoosePhotos(prev => [...prev, newPhoto]);
                         setInitialLightboxPhoto(newPhoto);
 
-                        // Analyse the photo with Gemini Vision
-                        fetch('/api/analyse-photo', {
+                        // Analyse the photo with Gemini Vision (server-stored API key)
+                        const sid = localStorage.getItem('hk_sessionId');
+                        if (sid) fetch('/api/analyse-photo', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ image: dataUrl, apiKey }),
+                          body: JSON.stringify({ image: dataUrl, sessionId: sid }),
                         }).then(r => r.json()).then(data => {
                           if (data.analysis) setPhotoAnalysis(data.analysis);
                         }).catch(() => {}); // Silent fail — analysis is optional
@@ -540,12 +551,26 @@ const App: React.FC = () => {
         )}
 
         {/* View content */}
-        {activeView === 'timeline' && (
+        {viewingMember && (() => {
+          const member = familyMembers.find(m => m.name.toLowerCase() === viewingMember.toLowerCase());
+          if (!member) return null;
+          return (
+            <MemberDetail
+              member={member}
+              timeline={timeline}
+              onBack={() => setViewingMember(null)}
+              onSetProfilePhoto={handleSetProfilePhoto}
+            />
+          );
+        })()}
+
+        {!viewingMember && activeView === 'timeline' && (
           <HeritageKeeper
             timeline={filteredTimeline}
             familyMembers={filteredMembers}
             loosePhotos={loosePhotos}
             onViewTree={() => setActiveView('tree')}
+            onViewMember={(name) => setViewingMember(name)}
             onPromptClick={(prompt) => sendText(prompt)}
             onUpdatePhoto={handleUpdatePhoto}
             onDeletePhoto={handleDeletePhoto}
@@ -553,7 +578,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {activeView === 'tree' && (
+        {!viewingMember && activeView === 'tree' && (
           <FamilyTree
             members={filteredMembers}
             onMemberClick={() => setActiveView('timeline')}
@@ -572,7 +597,7 @@ const App: React.FC = () => {
           />
         )}
 
-        {activeView === 'share' && (
+        {!viewingMember && activeView === 'share' && (
           <ShareView timeline={timeline} familyMembers={familyMembers} />
         )}
       </div>
