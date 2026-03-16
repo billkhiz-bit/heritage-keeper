@@ -1443,37 +1443,45 @@ button.tree-member-card {
 }
 
 .onboarding-card {
-  padding: 16px 20px;
-  background: var(--primary-light);
-  border: 1px solid var(--primary-mid);
-  border-radius: var(--radius);
+  padding: 20px 24px;
+  background: #fffbf0;
+  border: 1px solid #e8dcc8;
+  border-radius: 4px;
   cursor: pointer;
   text-align: left;
   font-family: var(--font);
   transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transform: rotate(-0.5deg);
 }
 
+.onboarding-card:nth-child(2) { transform: rotate(0.3deg); }
+.onboarding-card:nth-child(3) { transform: rotate(-0.2deg); }
+
 .onboarding-card:hover {
-  background: #ddd6fe;
-  border-color: var(--primary);
+  background: #fff8e8;
+  border-color: #d4c4a0;
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .onboarding-label {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: var(--primary);
+  color: #b08d57;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-family: var(--font);
 }
 
 .onboarding-text {
   font-family: var(--font-handwritten);
-  font-size: 16px;
-  font-style: italic;
+  font-size: 20px;
+  font-style: normal;
   color: var(--primary-dark);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 /* ─── Conversation Thread ─── */

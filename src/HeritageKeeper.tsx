@@ -39,6 +39,7 @@ interface Props {
   onUpdatePhoto?: (photo: HistoricalPhoto) => void;
   onDeletePhoto?: (photo: HistoricalPhoto) => void;
   initialLightboxPhoto?: HistoricalPhoto | null;
+  hasStartedConversation?: boolean;
 }
 
 const AVATAR_COLOURS = [
@@ -62,7 +63,7 @@ const ONBOARDING_PROMPTS = [
   "What's a family recipe or tradition that's been passed down?",
 ];
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, initialLightboxPhoto }) => {
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, initialLightboxPhoto, hasStartedConversation }) => {
   const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
@@ -416,27 +417,37 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-state-icon">&#x1f4d6;</div>
-            <h3>Your Family Story Starts Here</h3>
-            <p>
-              Share a family memory by speaking or typing above.
-              The Heritage Keeper will find period photographs, build your family tree,
-              and create an illustrated timeline.
-            </p>
-            {onPromptClick && (
-              <div className="onboarding-prompts fade-in">
-                {ONBOARDING_PROMPTS.map((prompt, i) => (
-                  <button
-                    key={i}
-                    className="onboarding-card"
-                    onClick={() => onPromptClick(prompt)}
-                    aria-label={`Try prompt: ${prompt}`}
-                  >
-                    <span className="onboarding-label">Try this</span>
-                    <p className="onboarding-text">{prompt}</p>
-                  </button>
-                ))}
-              </div>
+            {hasStartedConversation ? (
+              <>
+                <div className="empty-state-icon" style={{ fontSize: 48 }}>&#x1f4ac;</div>
+                <h3>Heritage Keeper is listening...</h3>
+                <p>Your story is being preserved. The timeline will appear shortly.</p>
+              </>
+            ) : (
+              <>
+                <div className="empty-state-icon">&#x1f4d6;</div>
+                <h3>Your Family Story Starts Here</h3>
+                <p>
+                  Share a family memory by speaking or typing above.
+                  The Heritage Keeper will find period photographs, build your family tree,
+                  and create an illustrated timeline.
+                </p>
+                {onPromptClick && (
+                  <div className="onboarding-prompts fade-in">
+                    {ONBOARDING_PROMPTS.map((prompt, i) => (
+                      <button
+                        key={i}
+                        className="onboarding-card"
+                        onClick={() => onPromptClick(prompt)}
+                        aria-label={`Try prompt: ${prompt}`}
+                      >
+                        <span className="onboarding-label">Try this</span>
+                        <p className="onboarding-text">{prompt}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

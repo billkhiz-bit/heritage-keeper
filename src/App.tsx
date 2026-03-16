@@ -63,6 +63,7 @@ const App: React.FC = () => {
   const [viewingMember, setViewingMember] = useState<string | null>(null);
   const [conversation, setConversation] = useState<{role: 'user' | 'agent', text: string, timestamp: number}[]>([]);
   const [photoAnalysis, setPhotoAnalysis] = useState<string | null>(null);
+  const [hasStartedConversation, setHasStartedConversation] = useState(false);
   const audioRef = useRef<AudioManager | null>(null);
 
   const handleUIEvent = useCallback((event: string, data: any) => {
@@ -226,6 +227,7 @@ const App: React.FC = () => {
     audioRef.current.sendText(msg);
     setTextInput('');
     setStatus('thinking');
+    setHasStartedConversation(true);
   };
 
   const handleUpdatePhoto = (updated: HistoricalPhoto) => {
@@ -234,6 +236,26 @@ const App: React.FC = () => {
       ...entry,
       photos: entry.photos.map(p => p.url === updated.url ? updated : p),
     })));
+
+    // Auto-link: if peopleInPhoto names match family members, set their profile photo
+    if (updated.peopleInPhoto && updated.peopleInPhoto.length > 0) {
+      setFamilyMembers(prev => {
+        let changed = false;
+        const updated_ = prev.map(member => {
+          const match = updated.peopleInPhoto!.some(p => {
+            const key = p.toLowerCase();
+            const name = member.name.toLowerCase();
+            return key === name || key.includes(name) || name.includes(key);
+          });
+          if (match && !member.profilePhotoUrl) {
+            changed = true;
+            return { ...member, profilePhotoUrl: updated.url };
+          }
+          return member;
+        });
+        return changed ? updated_ : prev;
+      });
+    }
   };
 
   const handleSetProfilePhoto = (memberName: string, photoUrl: string) => {
@@ -577,6 +599,7 @@ const App: React.FC = () => {
             onUpdatePhoto={handleUpdatePhoto}
             onDeletePhoto={handleDeletePhoto}
             initialLightboxPhoto={initialLightboxPhoto}
+            hasStartedConversation={hasStartedConversation}
           />
         )}
 
