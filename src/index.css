@@ -5,7 +5,8 @@
   --primary-light: #ede9fe;
   --primary-mid: #c4b5fd;
   --primary-dark: #5b21b6;
-  --bg: #f7f7f8;
+  --bg: #faf8f5;
+  --bg-scrapbook: #fdf6ee;
   --bg-card: #ffffff;
   --bg-sidebar: #faf8ff;
   --border: #e5e5ea;
@@ -22,6 +23,8 @@
   --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-handwritten: 'Caveat', cursive;
+  --font-serif: 'Playfair Display', Georgia, serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -438,27 +441,37 @@ body {
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 4px;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-scrapbook);
+  border-radius: var(--radius-sm);
 }
 
 .photo-grid-item {
   position: relative;
   border: none;
-  padding: 0;
-  background: none;
+  padding: 8px 8px 36px 8px;
+  background: #fff;
   cursor: pointer;
-  overflow: hidden;
-  border-radius: 4px;
-  aspect-ratio: 4/3;
+  overflow: visible;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: var(--font);
 }
 
-.photo-grid-item:hover { opacity: 0.9; }
+.photo-grid-item:nth-child(odd) { transform: rotate(-1.5deg); }
+.photo-grid-item:nth-child(even) { transform: rotate(1deg); }
+.photo-grid-item:nth-child(3n) { transform: rotate(-0.5deg); }
+.photo-grid-item:nth-child(4n) { transform: rotate(2deg); }
+.photo-grid-item:hover { transform: rotate(0deg) scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 2; }
 
 .photo-grid-img {
   width: 100%;
-  height: 100%;
+  aspect-ratio: 4/3;
   object-fit: cover;
   display: block;
+  border-radius: 1px;
 }
 
 /* Legacy strip support */
@@ -573,14 +586,15 @@ body {
 
 .entry-photo-caption {
   position: absolute;
-  bottom: 6px;
-  left: 6px;
-  right: 6px;
-  background: rgba(0,0,0,0.7);
-  color: white;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 10px;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 0;
+  font-family: var(--font-handwritten);
+  font-size: 14px;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -685,6 +699,7 @@ body {
   font-weight: 800;
   color: var(--text);
   margin-bottom: 6px;
+  font-family: var(--font-serif);
 }
 
 .entry-summary {
@@ -854,6 +869,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-family: var(--font-serif);
 }
 
 .sidebar-card-title.purple { color: var(--primary); }
@@ -1211,7 +1227,7 @@ button.tree-member-card {
 
 /* ─── Loose Photos Strip ─── */
 .photos-strip {
-  background: var(--bg-card);
+  background: var(--bg-scrapbook);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   overflow: hidden;
@@ -1453,7 +1469,8 @@ button.tree-member-card {
 }
 
 .onboarding-text {
-  font-size: 14px;
+  font-family: var(--font-handwritten);
+  font-size: 16px;
   font-style: italic;
   color: var(--primary-dark);
   line-height: 1.5;
@@ -1556,3 +1573,92 @@ button.tree-member-card {
   color: var(--danger);
   font-weight: 600;
 }
+
+/* Photo count badge */
+.photo-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--primary);
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Empty state icon */
+.empty-state-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+/* Lightbox editable form */
+.lightbox-notes-form {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lightbox-field {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font);
+  resize: none;
+}
+
+.lightbox-field::placeholder { color: var(--text-muted); }
+.lightbox-field:focus { outline: none; border-color: var(--primary); }
+
+.lightbox-field.notes {
+  font-family: var(--font-handwritten);
+  font-size: 16px;
+  min-height: 60px;
+}
+
+.lightbox-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.lightbox-save-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.lightbox-save-btn:hover { background: var(--primary-dark); }
+
+.lightbox-delete-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fecaca;
+  background: transparent;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.lightbox-delete-btn:hover { background: #fef2f2; }

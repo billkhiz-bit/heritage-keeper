@@ -9,6 +9,10 @@ interface HistoricalPhoto {
   url: string;
   title: string;
   description: string;
+  notes?: string;
+  dateTaken?: string;
+  peopleInPhoto?: string[];
+  source?: 'wikimedia' | 'upload';
 }
 
 interface TimelineEntry {
@@ -53,6 +57,7 @@ const App: React.FC = () => {
   const [toolActivity, setToolActivity] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loosePhotos, setLoosePhotos] = useState<HistoricalPhoto[]>([]);
+  const [initialLightboxPhoto, setInitialLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [conversation, setConversation] = useState<{role: 'user' | 'agent', text: string, timestamp: number}[]>([]);
   const [photoAnalysis, setPhotoAnalysis] = useState<string | null>(null);
@@ -181,6 +186,17 @@ const App: React.FC = () => {
     if (familyMembers.length > 0) localStorage.setItem('hk_family', JSON.stringify(familyMembers));
   }, [familyMembers]);
 
+  // Scroll to newest entry when timeline grows
+  const prevTimelineLength = useRef(timeline.length);
+  useEffect(() => {
+    if (timeline.length > prevTimelineLength.current) {
+      setTimeout(() => {
+        document.querySelector('.entry-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+    prevTimelineLength.current = timeline.length;
+  }, [timeline.length]);
+
   useEffect(() => {
     if (!isReady) return;
     const audio = new AudioManager(handleMessage);
@@ -208,6 +224,22 @@ const App: React.FC = () => {
     audioRef.current.sendText(msg);
     setTextInput('');
     setStatus('thinking');
+  };
+
+  const handleUpdatePhoto = (updated: HistoricalPhoto) => {
+    setLoosePhotos(prev => prev.map(p => p.url === updated.url ? updated : p));
+    setTimeline(prev => prev.map(entry => ({
+      ...entry,
+      photos: entry.photos.map(p => p.url === updated.url ? updated : p),
+    })));
+  };
+
+  const handleDeletePhoto = (photo: HistoricalPhoto) => {
+    setLoosePhotos(prev => prev.filter(p => p.url !== photo.url));
+    setTimeline(prev => prev.map(entry => ({
+      ...entry,
+      photos: entry.photos.filter(p => p.url !== photo.url),
+    })));
   };
 
   const handleStart = () => {
@@ -242,7 +274,7 @@ const App: React.FC = () => {
         <p className="desc">
           Share your family memories through voice or text. The Heritage Keeper will
           preserve them as an illustrated timeline, find historical photographs,
-          and build your family tree — all through natural conversation.
+          and build your family tree - all through natural conversation.
         </p>
         <input
           type="password"
@@ -418,7 +450,9 @@ const App: React.FC = () => {
                           body: JSON.stringify({ image: dataUrl, title: file.name }),
                         });
                         const { url } = await resp.json();
-                        setLoosePhotos(prev => [...prev, { url, title: file.name.replace(/\.[^.]+$/, ''), description: 'Family photo' }]);
+                        const newPhoto: HistoricalPhoto = { url, title: file.name.replace(/\.[^.]+$/, ''), description: 'Family photo', source: 'upload' };
+                        setLoosePhotos(prev => [...prev, newPhoto]);
+                        setInitialLightboxPhoto(newPhoto);
 
                         // Analyse the photo with Gemini Vision
                         fetch('/api/analyse-photo', {
@@ -436,6 +470,9 @@ const App: React.FC = () => {
                     e.target.value = '';
                   }}
                 />
+                {loosePhotos.length > 0 && (
+                  <span className="photo-count-badge">{loosePhotos.length}</span>
+                )}
               </label>
               <button
                 className={`btn-icon ${isRecording ? 'recording' : ''}`}
@@ -510,6 +547,9 @@ const App: React.FC = () => {
             loosePhotos={loosePhotos}
             onViewTree={() => setActiveView('tree')}
             onPromptClick={(prompt) => sendText(prompt)}
+            onUpdatePhoto={handleUpdatePhoto}
+            onDeletePhoto={handleDeletePhoto}
+            initialLightboxPhoto={initialLightboxPhoto}
           />
         )}
 

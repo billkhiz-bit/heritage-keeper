@@ -13,6 +13,10 @@ export interface HistoricalPhoto {
   url: string;
   title: string;
   description: string;
+  notes?: string;
+  dateTaken?: string;
+  peopleInPhoto?: string[];
+  source?: 'wikimedia' | 'upload';
 }
 
 export interface TimelineEntry {

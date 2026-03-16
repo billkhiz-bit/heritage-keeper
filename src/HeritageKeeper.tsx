@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FamilyMember } from './FamilyTree';
 
 interface HistoricalPhoto {
   url: string;
   title: string;
   description: string;
+  notes?: string;
+  dateTaken?: string;
+  peopleInPhoto?: string[];
+  source?: 'wikimedia' | 'upload';
 }
 
 interface TimelineEntry {
@@ -31,6 +35,9 @@ interface Props {
   loosePhotos: HistoricalPhoto[];
   onViewTree: () => void;
   onPromptClick?: (prompt: string) => void;
+  onUpdatePhoto?: (photo: HistoricalPhoto) => void;
+  onDeletePhoto?: (photo: HistoricalPhoto) => void;
+  initialLightboxPhoto?: HistoricalPhoto | null;
 }
 
 const AVATAR_COLOURS = [
@@ -49,14 +56,29 @@ function getInitials(name: string): string {
 }
 
 const ONBOARDING_PROMPTS = [
-  "Tell me about your grandparents — where they came from, what they did...",
+  "Tell me about your grandparents - where they came from, what they did...",
   "What was your childhood home like? Describe the neighbourhood...",
   "What's a family recipe or tradition that's been passed down?",
 ];
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onPromptClick }) => {
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onPromptClick, onUpdatePhoto, onDeletePhoto, initialLightboxPhoto }) => {
   const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
+  const [editNotes, setEditNotes] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editPeople, setEditPeople] = useState('');
+
+  useEffect(() => {
+    if (initialLightboxPhoto) setLightboxPhoto(initialLightboxPhoto);
+  }, [initialLightboxPhoto]);
+
+  useEffect(() => {
+    if (lightboxPhoto) {
+      setEditNotes(lightboxPhoto.notes || '');
+      setEditDate(lightboxPhoto.dateTaken || '');
+      setEditPeople(lightboxPhoto.peopleInPhoto?.join(', ') || '');
+    }
+  }, [lightboxPhoto]);
 
   // Show newest entries first (by creation time — id is Date.now())
   const allEntries = [...timeline].sort(
@@ -97,7 +119,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
           </button>
         ))}
       </div>
-      <p className="photo-credit">Historical photos — Wikimedia Commons. Click to enlarge.</p>
+      <p className="photo-credit">Historical photos - Wikimedia Commons. Click to enlarge.</p>
     </div>
   );
 
@@ -107,18 +129,69 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
       {lightboxPhoto && (
         <div className="lightbox-overlay" onClick={() => setLightboxPhoto(null)}>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="lightbox-close"
-              onClick={() => setLightboxPhoto(null)}
-              aria-label="Close photo"
-            >
-              &times;
-            </button>
+            <button className="lightbox-close" onClick={() => setLightboxPhoto(null)} aria-label="Close photo">&times;</button>
             <img src={lightboxPhoto.url} alt={lightboxPhoto.title} className="lightbox-img" />
             <div className="lightbox-info">
               <h4>{lightboxPhoto.title}</h4>
-              {lightboxPhoto.description && <p>{lightboxPhoto.description}</p>}
-              <p className="lightbox-source">Source: Wikimedia Commons</p>
+              {lightboxPhoto.description && lightboxPhoto.description !== 'Family photo' && (
+                <p>{lightboxPhoto.description}</p>
+              )}
+              {lightboxPhoto.source !== 'upload' && (
+                <p className="lightbox-source">Source: Wikimedia Commons</p>
+              )}
+            </div>
+            <div className="lightbox-notes-form">
+              <textarea
+                className="lightbox-field notes"
+                placeholder="Add notes about this photo..."
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="lightbox-field"
+                  type="text"
+                  placeholder="When was this taken?"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <input
+                  className="lightbox-field"
+                  type="text"
+                  placeholder="Who is in this photo? (comma separated)"
+                  value={editPeople}
+                  onChange={(e) => setEditPeople(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+              </div>
+              <div className="lightbox-actions">
+                <button
+                  className="lightbox-delete-btn"
+                  onClick={() => {
+                    if (window.confirm('Remove this photo?')) {
+                      onDeletePhoto?.(lightboxPhoto);
+                      setLightboxPhoto(null);
+                    }
+                  }}
+                >
+                  Remove photo
+                </button>
+                <button
+                  className="lightbox-save-btn"
+                  onClick={() => {
+                    onUpdatePhoto?.({
+                      ...lightboxPhoto,
+                      notes: editNotes.trim() || undefined,
+                      dateTaken: editDate.trim() || undefined,
+                      peopleInPhoto: editPeople.trim() ? editPeople.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+                    });
+                    setLightboxPhoto(null);
+                  }}
+                >
+                  Save Notes
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -162,7 +235,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
           <div>
             <div className="timeline-header">
               <span className="timeline-title">
-                Family Timeline — {sortedEntries.length} {sortedEntries.length === 1 ? 'Memory' : 'Memories'}
+                Family Timeline - {sortedEntries.length} {sortedEntries.length === 1 ? 'Memory' : 'Memories'}
               </span>
             </div>
 
@@ -190,7 +263,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                       <div className="then-now">
                         {entry.thenDescription && (
                           <div className="then-col">
-                            <p className="then-now-label">Then — {entry.year}</p>
+                            <p className="then-now-label">Then - {entry.year}</p>
                             <p className="then-now-text">{entry.thenDescription}</p>
                           </div>
                         )}
@@ -316,7 +389,8 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
           </div>
         ) : (
           <div className="empty-state">
-            <h3>No memories yet</h3>
+            <div className="empty-state-icon">&#x1f4d6;</div>
+            <h3>Your Family Story Starts Here</h3>
             <p>
               Share a family memory by speaking or typing above.
               The Heritage Keeper will find period photographs, build your family tree,
@@ -379,7 +453,7 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
 
             {latestEntry.historicalFacts && latestEntry.historicalFacts.length > 0 && (
               <div className="context-section">
-                <p className="context-section-title">Key Facts — {latestEntry.year}</p>
+                <p className="context-section-title">Key Facts - {latestEntry.year}</p>
                 {latestEntry.historicalFacts.map((fact, i) => (
                   <p key={i} className="context-section-text" style={{ marginBottom: 6 }}>{fact}</p>
                 ))}
