@@ -159,6 +159,21 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onRenameMember, o
           &#x1f4be; Save to Tree
         </button>
 
+        {/* Voice hint */}
+        <div className="story-starters" style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+          <div className="story-starters-title">
+            <span>&#x1f399;</span> Voice Commands
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 8 }}>
+            Use the mic above to build your tree by voice:
+          </p>
+          <p style={{ fontSize: 14, fontFamily: 'var(--font-handwritten)', color: 'var(--primary-dark)', lineHeight: 1.6 }}>
+            "Bob is my father"<br/>
+            "Elena is Bob's mother"<br/>
+            "Sarah is married to Bob"
+          </p>
+        </div>
+
         {/* Story starters */}
         <div className="story-starters">
           <div className="story-starters-title">
