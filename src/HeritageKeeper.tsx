@@ -380,22 +380,17 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                         <div className="sources-section">
                           <p className="facts-label">Sources</p>
                           {entry.groundingSources.map((source, i) => {
+                            const isUrl = source.startsWith('http://') || source.startsWith('https://');
                             let label = source;
                             try {
-                              label = new URL(source).hostname.replace('www.', '');
+                              if (isUrl) label = new URL(source).hostname.replace('www.', '');
                             } catch {
-                              // Not a valid URL — display the raw string
+                              // Not a valid URL
                             }
-                            return (
-                              <a
-                                key={i}
-                                href={source}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="source-link"
-                              >
-                                {label}
-                              </a>
+                            return isUrl ? (
+                              <a key={i} href={source} target="_blank" rel="noopener noreferrer" className="source-link">{label}</a>
+                            ) : (
+                              <span key={i} className="source-link" style={{ cursor: 'default' }}>{label}</span>
                             );
                           })}
                         </div>

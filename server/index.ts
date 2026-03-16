@@ -73,6 +73,11 @@ app.post('/api/analyse-photo', async (req, res) => {
       return res.status(400).json({ error: 'Invalid image format' });
     }
 
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimes.includes(base64Match[1])) {
+      return res.status(400).json({ error: 'Only JPEG, PNG, WebP, and GIF images are supported' });
+    }
+
     const result = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-05-20',
       contents: [{

@@ -152,11 +152,21 @@ const FamilyTree: React.FC<Props> = ({ members, onMemberClick, onAddMember, onSt
       <div className="tree-main">
         {members.length === 0 ? (
           <div className="empty-state">
-            <h3>No family members yet</h3>
+            <div className="empty-state-icon">🌳</div>
+            <h3>Your Family Tree Starts Here</h3>
             <p>
               Share memories mentioning family members and the tree will build itself,
-              or add members manually using the form.
+              or add members manually using the form on the left.
             </p>
+            {onStoryStarter && (
+              <button
+                className="btn-post"
+                onClick={() => onStoryStarter("My grandmother's name was...")}
+                style={{ marginTop: 16 }}
+              >
+                Share a memory to get started
+              </button>
+            )}
           </div>
         ) : (
           <div>

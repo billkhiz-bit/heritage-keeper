@@ -460,7 +460,7 @@ const App: React.FC = () => {
                           body: JSON.stringify({ image: dataUrl, title: file.name }),
                         });
                         const { url } = await resp.json();
-                        const newPhoto: HistoricalPhoto = { url, title: file.name.replace(/\.[^.]+$/, ''), description: 'Family photo', source: 'upload' };
+                        const newPhoto: HistoricalPhoto = { url, title: file.name.replace(/[<>"'&]/g, '').replace(/\.[^.]+$/, ''), description: 'Family photo', source: 'upload' };
                         setLoosePhotos(prev => [...prev, newPhoto]);
                         setInitialLightboxPhoto(newPhoto);
 
@@ -515,13 +515,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Agent response */}
-        {agentText && (
-          <div className="agent-response fade-in">
-            <p>{agentText}</p>
-          </div>
-        )}
-
         {/* Photo analysis */}
         {photoAnalysis && (
           <div className="photo-analysis fade-in">
@@ -533,8 +526,17 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Conversation history */}
-        <ConversationThread messages={conversation} />
+        {/* Agent interaction area */}
+        {(agentText || conversation.length > 0) && (
+          <div style={{ marginBottom: 20 }}>
+            {agentText && (
+              <div className="agent-response fade-in">
+                <p>{agentText}</p>
+              </div>
+            )}
+            <ConversationThread messages={conversation} />
+          </div>
+        )}
 
         {/* Error — dismissible */}
         {error && (

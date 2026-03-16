@@ -1662,3 +1662,108 @@ button.tree-member-card {
 }
 
 .lightbox-delete-btn:hover { background: #fef2f2; }
+
+/* ─── Mobile Responsive Breakpoints ─── */
+
+/* Fix 1: Mobile nav overflow at <640px */
+@media (max-width: 640px) {
+  .nav {
+    padding: 0 16px;
+    height: 48px;
+  }
+
+  .nav-logo {
+    font-size: 14px;
+    margin-right: 16px;
+  }
+
+  .nav-logo-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .nav-tab {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .nav-search {
+    display: none;
+  }
+
+  .nav-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .app-layout {
+    padding: 16px;
+  }
+
+  .memory-input-section {
+    padding: 14px 16px;
+  }
+
+  .memory-input-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .input-actions {
+    align-self: flex-end;
+  }
+}
+
+/* Fix 4: Onboarding card touch targets on mobile */
+@media (max-width: 640px) {
+  .onboarding-card {
+    padding: 16px 20px;
+    min-height: 72px;
+  }
+
+  .onboarding-text {
+    font-size: 14px;
+  }
+}
+
+/* Fix 5: Lightbox mobile */
+@media (max-width: 640px) {
+  .lightbox-content {
+    max-height: 95vh;
+    border-radius: var(--radius-sm);
+  }
+
+  .lightbox-overlay {
+    padding: 8px;
+  }
+
+  .lightbox-notes-form {
+    padding: 12px 16px;
+  }
+}
+
+/* Fix 2: Photo grid tablet sizing */
+@media (max-width: 480px) {
+  .photo-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .photo-grid-item {
+    padding: 4px 4px 28px 4px;
+  }
+}
+
+/* Fix 3: Photo caption clipping */
+@media (max-width: 480px) {
+  .entry-photo-caption {
+    white-space: normal;
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
