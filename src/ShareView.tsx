@@ -164,7 +164,7 @@ ${familyMembers.length > 0 ? `
               disabled={loadingSummary || !hasData}
               style={{ width: '100%' }}
             >
-              {loadingSummary ? 'Writing your heritage story...' : '&#x2728; Generate Heritage Summary'}
+              {loadingSummary ? 'Writing your heritage story...' : '\u{2728} Generate Heritage Summary'}
             </button>
           </div>
         )}
