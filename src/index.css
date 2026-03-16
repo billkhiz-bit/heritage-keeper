@@ -1466,22 +1466,22 @@ button.tree-member-card {
 }
 
 .onboarding-label {
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   color: #b08d57;
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-family: var(--font);
 }
 
 .onboarding-text {
   font-family: var(--font-handwritten);
-  font-size: 20px;
+  font-size: 26px;
   font-style: normal;
   color: var(--primary-dark);
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 /* ─── Conversation Thread ─── */

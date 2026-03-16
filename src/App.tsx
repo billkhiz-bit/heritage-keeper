@@ -217,6 +217,10 @@ const App: React.FC = () => {
     if (isRecording) {
       audioRef.current.stopRecording();
     } else {
+      if (!audioRef.current.connected) {
+        setError('Not connected yet. Please wait for the status to show "Ready".');
+        return;
+      }
       setAgentText('');
       audioRef.current.startRecording();
     }
@@ -565,7 +569,7 @@ const App: React.FC = () => {
             </div>
           </div>
           {isRecording && (
-            <div className="recording-indicator fade-in">
+            <div className="recording-indicator fade-in" role="status" aria-live="polite">
               <div className="waveform-bars">
                 {[...Array(12)].map((_, i) => (
                   <div key={i} className="waveform-bar" style={{ animationDelay: `${i * 0.05}s` }} />
