@@ -19,6 +19,8 @@ interface Props {
 
 const ShareView: React.FC<Props> = ({ timeline, familyMembers }) => {
   const [copied, setCopied] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   const exportData = {
     exportedAt: new Date().toISOString(),
@@ -53,6 +55,26 @@ const ShareView: React.FC<Props> = ({ timeline, familyMembers }) => {
     });
   };
 
+  const hasData = timeline.length > 0 || familyMembers.length > 0;
+
+  const generateSummary = async () => {
+    const sessionId = localStorage.getItem('hk_sessionId');
+    if (!sessionId || !hasData) return;
+    setLoadingSummary(true);
+    try {
+      const resp = await fetch('/api/heritage-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, timeline, familyMembers }),
+      });
+      const data = await resp.json();
+      if (data.summary) setSummary(data.summary);
+    } catch {
+      setSummary('Unable to generate summary. Please try again.');
+    }
+    setLoadingSummary(false);
+  };
+
   const handlePdfExport = () => {
     const win = window.open('', '_blank');
     if (!win) return;
@@ -78,6 +100,7 @@ const ShareView: React.FC<Props> = ({ timeline, familyMembers }) => {
 </head><body>
 <h1>Heritage Keeper - Family Timeline</h1>
 <p class="stats">${timeline.length} memories &bull; ${familyMembers.length} family members &bull; Exported ${new Date().toLocaleDateString()}</p>
+${summary ? `<div style="background:#faf8ff;padding:20px;border-radius:8px;margin-bottom:32px;border-left:4px solid #7c3aed"><p style="font-family:Georgia,serif;font-size:15px;line-height:1.8;color:#333">${summary}</p></div>` : ''}
 ${timeline.map(e => `
 <div class="entry">
   <span class="year">${e.year}</span>
@@ -104,8 +127,6 @@ ${familyMembers.length > 0 ? `
     win.print();
   };
 
-  const hasData = timeline.length > 0 || familyMembers.length > 0;
-
   return (
     <div style={{ maxWidth: 720 }}>
       <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
@@ -114,6 +135,40 @@ ${familyMembers.length > 0 ? `
       <p style={{ color: 'var(--text-secondary)', marginBottom: 28, lineHeight: 1.6 }}>
         Preserve your findings. Export your family history, or share a snapshot with relatives.
       </p>
+
+      {/* Heritage Summary */}
+      <div className="sidebar-card" style={{ marginBottom: 20 }}>
+        <h4 className="sidebar-card-title purple" style={{ fontFamily: 'var(--font-serif)' }}>&#x1f4d6; Heritage Summary</h4>
+        {summary ? (
+          <div>
+            <p style={{ fontSize: 15, lineHeight: 1.8, color: 'var(--text)', fontFamily: 'var(--font-serif)', whiteSpace: 'pre-wrap' }}>
+              {summary}
+            </p>
+            <button
+              className="btn-post"
+              onClick={generateSummary}
+              disabled={loadingSummary}
+              style={{ marginTop: 12, width: '100%', background: 'var(--primary-light)', color: 'var(--primary)' }}
+            >
+              {loadingSummary ? 'Regenerating...' : 'Regenerate Summary'}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.6 }}>
+              Generate a beautiful narrative summary of your entire family heritage - perfect for sharing with relatives or printing.
+            </p>
+            <button
+              className="btn-post"
+              onClick={generateSummary}
+              disabled={loadingSummary || !hasData}
+              style={{ width: '100%' }}
+            >
+              {loadingSummary ? 'Writing your heritage story...' : '&#x2728; Generate Heritage Summary'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Data Portability */}
       <div className="sidebar-card" style={{ marginBottom: 20 }}>

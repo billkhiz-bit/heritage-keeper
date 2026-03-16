@@ -554,6 +554,7 @@ const App: React.FC = () => {
                 className="btn-post"
                 onClick={() => sendText()}
                 disabled={!textInput.trim() || status === 'disconnected'}
+                aria-label="Post memory"
               >
                 Post Memory
               </button>

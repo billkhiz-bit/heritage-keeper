@@ -41,6 +41,11 @@ app.post('/api/upload-photo', (req, res) => {
     if (!image || typeof image !== 'string') {
       return res.status(400).json({ error: 'Image data required' });
     }
+    // Validate MIME type
+    const mimeMatch = image.match(/^data:(.+);base64,/);
+    if (!mimeMatch || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mimeMatch[1])) {
+      return res.status(400).json({ error: 'Only JPEG, PNG, WebP, and GIF images are supported' });
+    }
     const id = randomUUID();
     uploadedImages.set(id, image);
     // Clean up after 1 hour
@@ -109,6 +114,61 @@ Keep it concise — 4-5 sentences for the description, 1 sentence for era, 2-3 b
   } catch (err: any) {
     console.error('[Vision] Analysis failed:', err.message);
     res.status(500).json({ error: 'Photo analysis failed' });
+  }
+});
+
+// Heritage summary endpoint — Gemini generates a narrative of the entire family history
+app.post('/api/heritage-summary', async (req, res) => {
+  try {
+    const { sessionId, timeline, familyMembers } = req.body;
+    if (!sessionId || !timeline) {
+      return res.status(400).json({ error: 'Session ID and timeline required' });
+    }
+
+    const apiKey = sessionApiKeys.get(sessionId);
+    if (!apiKey) {
+      return res.status(401).json({ error: 'Session not found. Please reconnect.' });
+    }
+
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+
+    const storySummaries = timeline.map((e: any) =>
+      `${e.year}: "${e.title}" - ${e.summary} (Location: ${e.location || 'unknown'}. People: ${(e.people || []).join(', ') || 'none'})`
+    ).join('\n');
+
+    const memberList = (familyMembers || []).map((m: any) =>
+      `${m.name} (${m.relationship}, generation ${m.generation})`
+    ).join(', ');
+
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-preview-05-20',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are Heritage Keeper, a warm and eloquent family historian. Based on the following family memories and family tree, write a beautiful 2-3 paragraph narrative summary of this family's heritage. Write in a warm, storytelling tone — as if you're introducing this family to someone who wants to understand where they come from.
+
+## Family Members
+${memberList || 'No members recorded yet.'}
+
+## Memories (chronological)
+${storySummaries || 'No memories recorded yet.'}
+
+## Instructions
+- Weave the stories together into a cohesive narrative
+- Mention specific people, places, and time periods
+- Highlight themes (migration, resilience, family bonds, traditions)
+- End with something hopeful about preserving these stories for future generations
+- Keep it to 2-3 paragraphs, roughly 150-200 words
+- Use British English`,
+        }],
+      }],
+    });
+
+    res.json({ summary: result.text || '' });
+  } catch (err: any) {
+    console.error('[Summary] Generation failed:', err.message);
+    res.status(500).json({ error: 'Summary generation failed' });
   }
 });
 
