@@ -229,17 +229,17 @@ export class LiveSession {
     }
   }
 
+  private audioChunkCount = 0;
+
   sendAudio(audioData: Buffer | Uint8Array): void {
     if (!this.session || !this.isConnected) return;
     try {
-      // Convert raw PCM to base64 and send as inline data
-      const base64 = Buffer.from(audioData).toString('base64');
-      this.session.sendRealtimeInput({
-        audio: {
-          data: base64,
-          mimeType: 'audio/pcm;rate=16000',
-        },
-      });
+      const blob = new Blob([new Uint8Array(audioData)], { type: 'audio/pcm;rate=16000' });
+      this.session.sendRealtimeInput({ audio: blob as any });
+      this.audioChunkCount++;
+      if (this.audioChunkCount % 50 === 1) {
+        console.log(`[Live] Audio chunk #${this.audioChunkCount} sent (${audioData.length} bytes)`);
+      }
     } catch (err) {
       console.error('[Live] Failed to send audio:', err);
     }

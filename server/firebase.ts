@@ -18,6 +18,7 @@ export function getDb(): Firestore {
       }
     }
     db = getFirestore();
+    db.settings({ ignoreUndefinedProperties: true });
   }
   return db;
 }
