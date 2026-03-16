@@ -165,6 +165,8 @@ const App: React.FC = () => {
         if (message.recording) {
           setStatus('listening');
           setAgentText('');
+        } else {
+          setStatus('connected');
         }
         break;
       case 'error':
@@ -549,23 +551,35 @@ const App: React.FC = () => {
                   <span className="photo-count-badge">{loosePhotos.length}</span>
                 )}
               </label>
-              <button
-                className={`btn-icon ${isRecording ? 'recording' : ''}`}
-                onClick={toggleRecording}
-                disabled={status === 'disconnected' || status === 'connecting'}
-                aria-label={isRecording ? 'Stop recording' : 'Start recording'}
-                title={isRecording ? 'Tap to stop' : 'Speak a memory'}
-              >
-                {isRecording ? '\u{23F9}' : '\u{1F399}'}
-              </button>
-              <button
-                className="btn-post"
-                onClick={() => sendText()}
-                disabled={!textInput.trim() || status === 'disconnected'}
-                aria-label="Post memory"
-              >
-                Post Memory
-              </button>
+              {isRecording ? (
+                <button
+                  className="btn-stop-recording"
+                  onClick={toggleRecording}
+                  aria-label="Stop recording"
+                >
+                  &#x23F9; Tap to Finish
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="btn-icon"
+                    onClick={toggleRecording}
+                    disabled={status === 'disconnected' || status === 'connecting'}
+                    aria-label="Start recording"
+                    title="Speak a memory"
+                  >
+                    {'\u{1F399}'}
+                  </button>
+                  <button
+                    className="btn-post"
+                    onClick={() => sendText()}
+                    disabled={!textInput.trim() || status === 'disconnected'}
+                    aria-label="Post memory"
+                  >
+                    Post Memory
+                  </button>
+                </>
+              )}
             </div>
           </div>
           {isRecording && (
