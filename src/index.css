@@ -1728,6 +1728,22 @@ button.tree-member-card {
   background: var(--primary-light);
 }
 
+.delete-entry-btn {
+  background: none;
+  border: none;
+  padding: 6px 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font);
+  margin-top: 8px;
+  transition: color 0.15s;
+}
+
+.delete-entry-btn:hover {
+  color: var(--danger);
+}
+
 /* ─── Mobile Responsive Breakpoints ─── */
 
 /* Fix 1: Mobile nav overflow at <640px */

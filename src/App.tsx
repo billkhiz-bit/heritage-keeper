@@ -293,6 +293,10 @@ const App: React.FC = () => {
     ));
   };
 
+  const handleDeleteEntry = (entryId: string) => {
+    setTimeline(prev => prev.filter(entry => entry.id !== entryId));
+  };
+
   const handleRenameMember = (oldName: string, newName: string) => {
     setFamilyMembers(prev => prev.map(m =>
       m.name.toLowerCase() === oldName.toLowerCase()
@@ -635,6 +639,7 @@ const App: React.FC = () => {
             onDeletePhoto={handleDeletePhoto}
             onAddComment={handleAddComment}
             onDeleteComment={handleDeleteComment}
+            onDeleteEntry={handleDeleteEntry}
             initialLightboxPhoto={initialLightboxPhoto}
             hasStartedConversation={hasStartedConversation}
           />

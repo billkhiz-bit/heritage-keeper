@@ -42,6 +42,7 @@ interface Props {
   onDeletePhoto?: (photo: HistoricalPhoto) => void;
   onAddComment?: (entryId: string, comment: string) => void;
   onDeleteComment?: (entryId: string, commentIndex: number) => void;
+  onDeleteEntry?: (entryId: string) => void;
   initialLightboxPhoto?: HistoricalPhoto | null;
   hasStartedConversation?: boolean;
 }
@@ -67,7 +68,7 @@ const ONBOARDING_PROMPTS = [
   "What's a family recipe or tradition that's been passed down?",
 ];
 
-const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, onAddComment, onDeleteComment, initialLightboxPhoto, hasStartedConversation }) => {
+const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos, onViewTree, onViewMember, onPromptClick, onUpdatePhoto, onDeletePhoto, onAddComment, onDeleteComment, onDeleteEntry, initialLightboxPhoto, hasStartedConversation }) => {
   const [lightboxPhoto, setLightboxPhoto] = useState<HistoricalPhoto | null>(null);
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [memberFilter, setMemberFilter] = useState<string | null>(null);
@@ -498,6 +499,18 @@ const HeritageKeeper: React.FC<Props> = ({ timeline, familyMembers, loosePhotos,
                           &#x1f4ac; Add a family note
                         </button>
                       )}
+
+                      <button
+                        className="delete-entry-btn"
+                        onClick={() => {
+                          if (window.confirm(`Delete "${entry.title}"? This cannot be undone.`)) {
+                            onDeleteEntry?.(entry.id);
+                          }
+                        }}
+                        aria-label={`Delete memory: ${entry.title}`}
+                      >
+                        &#x1f5d1; Remove this memory
+                      </button>
                     </div>
                   </div>
                 </div>
